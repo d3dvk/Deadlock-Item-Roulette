@@ -1,0 +1,443 @@
+/* ==========================================================================
+   Deadlock Item Roulette Mod - Panorama Styles
+   ========================================================================== */
+
+/* Main Overlay Covering Shop */
+#ItemRouletteOverlay {
+    width: 100%;
+    height: 100%;
+    background-color: rgba(10, 14, 20, 0.94);
+    backdrop-filter: blur(14px);
+    z-index: 250;
+    flow-children: down;
+    horizontal-align: center;
+    vertical-align: center;
+    transition-property: opacity, transform;
+    transition-duration: 0.3s;
+    transition-timing-function: ease-in-out;
+}
+
+/* When Player Toggles Vanilla Shop Mode */
+#ItemRouletteOverlay.VanillaShopActive {
+    opacity: 0.0;
+    hittest: false;
+    transform: translateY(30px);
+}
+
+/* --------------------------------------------------------------------------
+   Top Bar / Header
+   -------------------------------------------------------------------------- */
+.RouletteHeader {
+    width: 100%;
+    height: 70px;
+    padding-left: 40px;
+    padding-right: 40px;
+    padding-top: 15px;
+    flow-children: right;
+    vertical-align: top;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.HeaderTitleGroup {
+    flow-children: down;
+    vertical-align: center;
+}
+
+.RouletteTitle {
+    font-family: "Trajan Pro", "Cinzel", "Times New Roman", sans-serif;
+    font-size: 24px;
+    font-weight: bold;
+    color: #f6e05e;
+    text-shadow: 0px 0px 12px rgba(246, 224, 94, 0.4);
+    letter-spacing: 2px;
+}
+
+.RouletteSubtitle {
+    font-size: 13px;
+    color: #a0aec0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.HeaderCenterGroup {
+    horizontal-align: center;
+    vertical-align: center;
+    flow-children: right;
+}
+
+.PhaseBadge {
+    padding: 6px 14px;
+    border-radius: 4px;
+    background-color: rgba(26, 32, 44, 0.8);
+    border: 1px solid rgba(78, 168, 222, 0.4);
+    font-size: 13px;
+    font-weight: bold;
+    color: #4ea8de;
+    letter-spacing: 1px;
+    margin-right: 20px;
+}
+
+.SoulsDisplay {
+    flow-children: right;
+    vertical-align: center;
+    background-color: rgba(20, 26, 36, 0.8);
+    padding: 6px 16px;
+    border-radius: 4px;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.SoulsIcon {
+    width: 20px;
+    height: 20px;
+    background-image: url("s2r://panorama/images/hud/core/soul_icon_psd.vtex");
+    background-size: cover;
+    margin-right: 8px;
+    vertical-align: center;
+}
+
+.SoulsValue {
+    font-size: 18px;
+    font-weight: bold;
+    color: #f7fafc;
+    vertical-align: center;
+}
+
+/* Emergency Toggle Button */
+.ToggleVanillaBtn {
+    horizontal-align: right;
+    vertical-align: center;
+    padding: 8px 18px;
+    border: 1px solid rgba(160, 174, 192, 0.35);
+    background-color: rgba(26, 32, 44, 0.6);
+    border-radius: 4px;
+    transition-property: background-color, border-color, box-shadow;
+    transition-duration: 0.2s;
+}
+
+.ToggleVanillaBtn:hover {
+    background-color: rgba(45, 55, 72, 0.9);
+    border-color: #cbd5e0;
+    box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.15);
+}
+
+.ToggleVanillaLabel {
+    font-size: 12px;
+    font-weight: bold;
+    color: #e2e8f0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* --------------------------------------------------------------------------
+   Roulette Reel & Viewport
+   -------------------------------------------------------------------------- */
+.RouletteMainArea {
+    width: 100%;
+    flow-children: down;
+    horizontal-align: center;
+    vertical-align: center;
+    margin-top: 30px;
+}
+
+.RouletteViewportContainer {
+    width: 960px;
+    height: 200px;
+    horizontal-align: center;
+    background-color: #06090dee;
+    border: 2px solid rgba(212, 175, 55, 0.4);
+    border-radius: 8px;
+    box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.8), inset 0px 0px 20px rgba(0, 0, 0, 0.9);
+    overflow: clip;
+}
+
+/* Center Pointer (Cursor) */
+.CenterPointer {
+    width: 4px;
+    height: 100%;
+    horizontal-align: center;
+    vertical-align: center;
+    background-color: #d4af37;
+    z-index: 10;
+    box-shadow: 0px 0px 12px #d4af37, 0px 0px 24px #ffd700;
+}
+
+.PointerArrowTop {
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 14px solid #ffd700;
+    horizontal-align: center;
+    vertical-align: top;
+    z-index: 11;
+}
+
+.PointerArrowBottom {
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 14px solid #ffd700;
+    horizontal-align: center;
+    vertical-align: bottom;
+    z-index: 11;
+}
+
+/* Reel Strip of Cards */
+#RouletteReel {
+    height: 100%;
+    flow-children: right;
+    vertical-align: center;
+}
+
+/* Individual Card */
+.RouletteCard {
+    width: 130px;
+    height: 176px;
+    margin-left: 5px;
+    margin-right: 5px;
+    vertical-align: center;
+    background-color: rgba(18, 24, 34, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    flow-children: down;
+    transition-property: transform, box-shadow;
+    transition-duration: 0.2s;
+}
+
+.RouletteCard.Tier_1 {
+    border-bottom: 3px solid #52b788;
+}
+
+.RouletteCard.Tier_2 {
+    border-bottom: 3px solid #4ea8de;
+}
+
+.RouletteCard.Tier_3 {
+    border-bottom: 3px solid #b5179e;
+}
+
+.RouletteCard.Tier_4 {
+    border-bottom: 3px solid #f77f00;
+}
+
+/* Winner Card Highlight */
+.RouletteCard.Winner {
+    transform: scale3d(1.05, 1.05, 1.0);
+    border: 2px solid #ffd700;
+    box-shadow: 0px 0px 25px rgba(255, 215, 0, 0.6);
+    background-color: rgba(30, 42, 60, 0.95);
+}
+
+.CardTierBar {
+    width: 100%;
+    height: 4px;
+}
+
+.CardItemIcon {
+    width: 80px;
+    height: 80px;
+    horizontal-align: center;
+    margin-top: 14px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.CardInfo {
+    width: 100%;
+    flow-children: down;
+    horizontal-align: center;
+    margin-top: 8px;
+    padding-left: 6px;
+    padding-right: 6px;
+}
+
+.CardItemName {
+    width: 100%;
+    text-align: center;
+    font-size: 11px;
+    font-weight: bold;
+    color: #f7fafc;
+    text-overflow: shrink;
+    height: 28px;
+}
+
+.CardItemCost {
+    horizontal-align: center;
+    font-size: 11px;
+    font-weight: bold;
+    margin-top: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Controls Area & Spin Button
+   -------------------------------------------------------------------------- */
+.RouletteControls {
+    horizontal-align: center;
+    flow-children: down;
+    margin-top: 24px;
+}
+
+#SpinButton {
+    horizontal-align: center;
+    padding: 14px 44px;
+    border-radius: 6px;
+    background-color: gradient(linear, 0% 0%, 0% 100%, from(#d4af37), to(#997316));
+    border: 2px solid #ffd700;
+    box-shadow: 0px 0px 20px rgba(212, 175, 55, 0.5);
+    transition-property: transform, box-shadow, background-color, opacity;
+    transition-duration: 0.15s;
+}
+
+#SpinButton:hover {
+    transform: scale3d(1.04, 1.04, 1.0);
+    box-shadow: 0px 0px 30px rgba(255, 215, 0, 0.8);
+    background-color: gradient(linear, 0% 0%, 0% 100%, from(#ffd700), to(#b8860b));
+}
+
+#SpinButton:active {
+    transform: scale3d(0.98, 0.98, 1.0);
+}
+
+#SpinButton.Disabled {
+    opacity: 0.4;
+    saturation: 0.2;
+    hittest: false;
+    box-shadow: none;
+}
+
+.SpinButtonLabel {
+    font-family: "Trajan Pro", "Cinzel", sans-serif;
+    font-size: 18px;
+    font-weight: bold;
+    color: #1a202c;
+    letter-spacing: 2px;
+    text-align: center;
+}
+
+#RouletteStatusLabel {
+    horizontal-align: center;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 10px;
+    color: #e2e8f0;
+}
+
+/* --------------------------------------------------------------------------
+   Active Target Goal Panel
+   -------------------------------------------------------------------------- */
+#TargetItemContainer {
+    width: 600px;
+    horizontal-align: center;
+    margin-top: 25px;
+    padding: 14px 20px;
+    background-color: rgba(16, 22, 32, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    flow-children: right;
+    transition-property: opacity, transform;
+    transition-duration: 0.3s;
+}
+
+#TargetItemContainer.NoTarget {
+    opacity: 0.25;
+}
+
+#TargetItemContainer.HasTarget {
+    opacity: 1.0;
+    border-color: rgba(212, 175, 55, 0.4);
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.6);
+}
+
+#TargetItemIcon {
+    width: 50px;
+    height: 50px;
+    vertical-align: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin-right: 15px;
+}
+
+.TargetDetails {
+    flow-children: down;
+    width: 500px;
+    vertical-align: center;
+}
+
+.TargetTopRow {
+    width: 100%;
+    flow-children: right;
+}
+
+#TargetItemName {
+    font-size: 15px;
+    font-weight: bold;
+    color: #f7fafc;
+}
+
+#TargetItemCost {
+    horizontal-align: right;
+    font-size: 14px;
+    font-weight: bold;
+    color: #ffd700;
+}
+
+.TargetProgressBarOuter {
+    width: 100%;
+    height: 10px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    margin-top: 6px;
+    overflow: clip;
+}
+
+#TargetProgressBarInner {
+    height: 100%;
+    width: 0%;
+    background-color: gradient(linear, 0% 0%, 100% 0%, from(#4ea8de), to(#52b788));
+    border-radius: 5px;
+    transition-property: width;
+    transition-duration: 0.2s;
+}
+
+#TargetProgressText {
+    horizontal-align: right;
+    font-size: 11px;
+    color: #a0aec0;
+    margin-top: 4px;
+}
+
+/* Floating Return Button for Vanilla Shop Mode */
+#ReturnToRouletteFloatBtn {
+    horizontal-align: right;
+    vertical-align: top;
+    margin-top: 15px;
+    margin-right: 180px;
+    padding: 8px 16px;
+    background-color: rgba(212, 175, 55, 0.9);
+    border: 1px solid #ffd700;
+    border-radius: 4px;
+    box-shadow: 0px 0px 15px rgba(212, 175, 55, 0.5);
+    z-index: 500;
+    opacity: 0.0;
+    hittest: false;
+    transition-property: opacity, transform;
+    transition-duration: 0.2s;
+}
+
+#ItemRouletteOverlay.VanillaShopActive ~ #ReturnToRouletteFloatBtn,
+.VanillaShopActive #ReturnToRouletteFloatBtn {
+    opacity: 1.0;
+    hittest: true;
+}
+
+.ReturnToRouletteFloatLabel {
+    font-size: 12px;
+    font-weight: bold;
+    color: #1a202c;
+    letter-spacing: 1px;
+}

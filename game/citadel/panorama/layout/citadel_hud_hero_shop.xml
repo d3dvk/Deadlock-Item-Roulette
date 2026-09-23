@@ -1,0 +1,205 @@
+<!-- xml reconstructed by Source 2 Viewer 19.2.0.0 & modified for Deadlock Item Roulette Mod -->
+<root>
+	<scripts>
+		<include src="s2r://panorama/scripts/deadlock_items_db.vjs_c" />
+		<include src="s2r://panorama/scripts/shop_purchase_tracker.vjs_c" />
+		<include src="s2r://panorama/scripts/item_roulette.vjs_c" />
+	</scripts>
+	<styles>
+		<include src="s2r://panorama/styles/citadel_base_styles.vcss_c" />
+		<include src="s2r://panorama/styles/citadel_hud_hero_shop.vcss_c" />
+		<include src="s2r://panorama/styles/ability_icons.vcss_c" />
+		<include src="s2r://panorama/styles/item_roulette.vcss_c" />
+	</styles>
+	<snippets>
+		<snippet name="RecentPurchase">
+			<Panel class="recentPurchase">
+				<Label class="recentTimePurchased" text="{s:time_purchased}" />
+				<CitadelHeroImage id="RecentPurchaseHeroImage" class="RecentPurchaseHeroImage" heroimagestyle="small" />
+				<Panel class="mod_icon" />
+				<Label class="recentModPurchaseName" text="{s:recent_mod_name}" />
+				<Label class="recentModTierCost" text="{s:recent_tier_purchased}" />
+				<Label class="recentModPurchaserHero" text="{s:recent_hero_name}" />
+			</Panel>
+		</snippet>
+	</snippets>
+	<CitadelHudHeroShop class="CitadelHudHeroShop gShopOpen" oncancel="CitadelExitUpgradeShop();" disallowedstyleflags="hover,descendantfocus" onactivate="">
+		<GlobalClassListener classes="gEditingBuilds gScoreboardOpen gShopOpen" />
+
+		<!-- Vanilla Deadlock Shop (Kept for compatibility & emergency fallback) -->
+		<Panel id="Shop" disallowedstyleflags="hover,descendantfocus">
+			<Panel id="NavPanel" class="TopBottomFlow">
+				<CitadelHeroScenePanelNew id="HeroScenePanel" heroscenestyle="Shop" />
+				<Panel id="ShopNav">
+					<Panel class="ShopHeader">
+						<Panel class="ShopName" />
+						<CitadelHudSoulAPContainer id="GoldAPContainer" />
+					</Panel>
+					<Panel class="ReadOnlyShop">
+						<Label class="ReadOnlyTitle" text="#BrowseItems_Title" />
+						<Label class="ReadOnlyDesc" text="#BrowseItems_Desc" />
+					</Panel>
+					<Panel class="APHeader">
+						<Panel class="SectionTitle">
+							<Label class="SectionLabel" text="Purchase Items" />
+						</Panel>
+					</Panel>
+				</Panel>
+				<Panel id="RecentPurchasesPanel">
+					<Label id="RecentPurchases" text="#Citadel_Hud_RecentPurchases" />
+					<Panel id="RecentPurchasesContainer" />
+				</Panel>
+				<Panel id="HeroPanel">
+					<Image id="HeroImage" scaling="stretch-to-fit-y-preserve-aspect" />
+					<Panel id="SoulsContainer">
+						<Panel id="SoulAmount">
+							<Panel class="SoulsImage" />
+							<Label class="AbilitiesLabel" text="{i:total_souls}" />
+						</Panel>
+						<Label class="totalSouls" text="Total Souls Collected" />
+						<Panel id="SoulRewards">
+							<Label text="View Soul Rewards" />
+						</Panel>
+						<Panel id="HeroStatsBtn" onmouseout="CitadelHideHeroStatsTooltip();">
+							<Label text="View Hero Stats" />
+						</Panel>
+					</Panel>
+				</Panel>
+				<Panel class="streetbrawl_info_container">
+					<Panel class="streetbrawl_round_start_timer">
+						<Label class="streetbrawl_timer_text" text="#Citadel_Hud_StreetBrawlShopCountdown" />
+						<Panel class="streetbrawl_countdown_container">
+							<Label class="streetbrawl_countdown" text="{d:sb_countdown}" />
+						</Panel>
+					</Panel>
+				</Panel>
+				<Panel id="InCombatAlert">
+					<Label text="#Citadel_Shop_InCombat_Alert" />
+				</Panel>
+			</Panel>
+			<Panel id="MainPanel" disallowedstyleflags="hover,descendantfocus">
+				<Panel id="ShopModsContainer" disallowedstyleflags="hover,descendantfocus">
+					<Panel id="ShopNavigation" disallowedstyleflags="hover,descendantfocus">
+						<Panel id="FavoritesNav" class="NavigationButton" onmouseactivate="CitadelShopModsActivate( EItemSlotType_Favorites ); PlaySoundEffect( &apos;UI.Shop.Mod.Starred.Click&apos; );">
+							<Panel class="ShopNavigationTab ShopNavigationTabBackground" />
+							<Panel class="ShopNavigationTab ShopNavigationTabEdgeOverlay" />
+							<Panel class="ShopNavigationTab ShopNavigationTabIcon" />
+						</Panel>
+						<Panel id="WeaponNav" class="NavigationButton" onmouseactivate="CitadelShopModsActivate( EItemSlotType_WeaponMod ); PlaySoundEffect( &apos;UI.Shop.Mod.Weapon.Click&apos; );">
+							<Panel class="ShopNavigationTab ShopNavigationTabBackground" />
+							<Panel class="ShopNavigationTab ShopNavigationTabEdgeOverlay" />
+							<Panel class="ShopNavigationTab ShopNavigationTabIcon" />
+						</Panel>
+						<Panel id="ArmorNav" class="NavigationButton" onmouseactivate="CitadelShopModsActivate( EItemSlotType_Armor ); PlaySoundEffect( &apos;UI.Shop.Mod.Vitality.Click&apos; );">
+							<Panel class="ShopNavigationTab ShopNavigationTabBackground" />
+							<Panel class="ShopNavigationTab ShopNavigationTabIcon" />
+							<Panel class="ShopNavigationTab ShopNavigationTabEdgeOverlay" />
+						</Panel>
+						<Panel id="TechNav" class="NavigationButton" onmouseactivate="CitadelShopModsActivate( EItemSlotType_Tech ); PlaySoundEffect( &apos;UI.Shop.Mod.Magic.Click&apos; );">
+							<Panel class="ShopNavigationTab ShopNavigationTabBackground" />
+							<Panel class="ShopNavigationTab ShopNavigationTabIcon" />
+							<Panel class="ShopNavigationTab ShopNavigationTabEdgeOverlay" />
+						</Panel>
+						<Panel id="SearchNav" class="NavigationButton" onmouseactivate="CitadelShopModsActivate( EItemSlotType_All ); PlaySoundEffect( &apos;UI.Shop.Mod.Search.Click&apos; );" onmouseover="UIShowTextTooltip( #CitadelShopSearch)" onmouseout="UIHideTextTooltip();" />
+						<Panel id="ToggleContainer" onactivate="CitadelToggleComponentGroupingInShop();">
+							<Panel id="ShowCategories" class="viewToggle category_view" onmouseover="UIShowTextTooltip( #Citadel_Shop_Sort_Tooltip_Categories )" onmouseout="UIHideTextTooltip()" />
+							<Panel id="ShowTiers" class="viewToggle tiers_view" onmouseover="UIShowTextTooltip( #Citadel_Shop_Sort_Tooltip_Tier )" onmouseout="UIHideTextTooltip()" />
+						</Panel>
+					</Panel>
+					<Panel id="ShopModListsContainer" disallowedstyleflags="hover,descendantfocus">
+						<Label class="HeroFavoritesHeaderLabel" text="{s:hero_name}&apos;s Recommended Mods" />
+						<CitadelShopModsList id="ShopModsListWeapon" category="Weapon" />
+						<CitadelShopModsList id="ShopModsListArmor" category="Armor" />
+						<CitadelShopModsList id="ShopModsListTech" category="Tech" />
+						<CitadelShopModsBuild id="ShopModsSelectedBuild" />
+						<CitadelShopModsList id="ShopModsListAll" category="All" />
+						<Panel id="SearchHeader">
+							<Panel id="SearchExamples">
+								<Label class="searchTitle" text="#CitadelShopSearch" />
+								<Label html="true" class="SearchExampleHeader" text="#CitadelShop_SearchExampleAlt" />
+							</Panel>
+							<Panel id="SearchContainer">
+								<Panel id="SearchBox">
+									<Panel id="ShopSearchIcon" onactivate="SetSearchFocus();" />
+									<TextEntry id="SearchTextEntry" acceptsfocus="true" acceptsinput="true" placeholder="#CitadelShopSearch" ontextentrychange="CitadelShopSearchTextEntryChanged()" onfocus="CitadelShopSearchTextEntryChanged()" />
+									<Button id="ClearSearchButton" onactivate="CitadelShopSearchTextEntryClear();" />
+								</Panel>
+							</Panel>
+						</Panel>
+					</Panel>
+				</Panel>
+			</Panel>
+			<Panel id="BackButton">
+				<Panel id="LeftCommandPanel" class="LeftRightFlow commandPanel" onactivate="CitadelExitUpgradeShop();">
+					<Panel class="FooterCommand DefaultESC light">
+						<CitadelBinding id="BackBinding" action="MenuBack" />
+						<Label class="FooterCommandLabel" text="#menu_exit_db_page" />
+					</Panel>
+				</Panel>
+			</Panel>
+		</Panel>
+
+		<!-- ============================================================= -->
+		<!-- ITEM ROULETTE OVERLAY (Primary Mod Interface)                -->
+		<!-- ============================================================= -->
+		<Panel id="ItemRouletteOverlay">
+			<!-- Header -->
+			<Panel class="RouletteHeader">
+				<Panel class="HeaderTitleGroup">
+					<Label class="RouletteTitle" text="DEADLOCK ROULETTE" />
+					<Label class="RouletteSubtitle" text="Случайная закупка предметов" />
+				</Panel>
+				<Panel class="HeaderCenterGroup">
+					<Label id="RoulettePhaseBadge" class="PhaseBadge" text="Ранняя игра (Тир 1)" />
+					<Panel class="SoulsDisplay">
+						<Panel class="SoulsIcon" />
+						<Label id="PlayerSoulsValue" class="SoulsValue" text="0" />
+					</Panel>
+				</Panel>
+				<Button id="ToggleVanillaShopBtn" class="ToggleVanillaBtn">
+					<Label id="ToggleVanillaShopLabel" class="ToggleVanillaLabel" text="ОБЫЧНЫЙ МАГАЗИН" />
+				</Button>
+			</Panel>
+
+			<!-- Roulette Reel Area -->
+			<Panel class="RouletteMainArea">
+				<Panel class="RouletteViewportContainer">
+					<Panel class="CenterPointer" />
+					<Panel class="PointerArrowTop" />
+					<Panel class="PointerArrowBottom" />
+					<Panel id="RouletteReel" />
+				</Panel>
+
+				<!-- Controls -->
+				<Panel class="RouletteControls">
+					<Button id="SpinButton">
+						<Label class="SpinButtonLabel" text="КРУТИТЬ РУЛЕТКУ" />
+					</Button>
+					<Label id="RouletteStatusLabel" text="ГОТОВО К ПРОКРУТКЕ" />
+				</Panel>
+
+				<!-- Current Target Goal -->
+				<Panel id="TargetItemContainer" class="NoTarget">
+					<Panel id="TargetItemIcon" />
+					<Panel class="TargetDetails">
+						<Panel class="TargetTopRow">
+							<Label id="TargetItemName" text="Нет активной цели" />
+							<Label id="TargetItemCost" text="" />
+						</Panel>
+						<Panel class="TargetProgressBarOuter">
+							<Panel id="TargetProgressBarInner" />
+						</Panel>
+						<Label id="TargetProgressText" text="0 / 0 душ" />
+					</Panel>
+				</Panel>
+			</Panel>
+		</Panel>
+
+		<!-- Floating Return Button (Visible only when in Vanilla Shop mode) -->
+		<Button id="ReturnToRouletteFloatBtn" onactivate="ItemRoulette.ToggleVanillaShop();">
+			<Label class="ReturnToRouletteFloatLabel" text="← ВЕРНУТЬСЯ К РУЛЕТКЕ" />
+		</Button>
+
+		<Panel id="Outline" hittest="false" />
+	</CitadelHudHeroShop>
+</root>

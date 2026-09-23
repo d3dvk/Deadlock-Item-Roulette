@@ -1,0 +1,46 @@
+# Compiled binary packages
+*.vpk
+*.zip
+*.rar
+*.7z
+*.tar.gz
+
+# Local media, screenshots and design assets
+screenshots/
+cover_cards/
+*.gif
+
+# GameBanana submission drafts
+GAMEBANANA.md
+GAMEBANANA_SOURCE.html
+
+# Temporary, scratch & dump files
+scratch/
+scratch_*
+release/
+*.tmp
+*.log
+*.bak
+*.bin
+*.vxml_c
+*.vcss_c
+*.vjs_c
+*.vtex_c
+
+# Essential build templates (required by tools/build_working_release.py)
+!original_icons.js
+!icons_red2.bin
+!scratch_shop.vxml_c
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# IDE & OS files
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+.DS_Store
