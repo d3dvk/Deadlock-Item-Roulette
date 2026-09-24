@@ -155,15 +155,18 @@ def main():
                     orig = mod_info.get("originalVpkNames", [])
                     if any("scamlock" in o.lower() for o in orig) or "scamlock" in mod_key.lower() or "local" in mod_key.lower():
                         for vpk_name in mod_info.get("currentVpks", []):
+                            if vpk_name.lower() == "pak01_dir.vpk":
+                                continue # NEVER overwrite pak01 (reserved for other mods)
                             target = ADDONS_DIR / vpk_name
                             pack_vpk_files(files_to_pack, target)
                             deployed_paths.append(str(target))
             except Exception as e:
                 print(f"Error parsing .dmm.json: {e}")
 
-        if not deployed_paths:
-            dest_pak = ADDONS_DIR / "pak02_dir.vpk" if (ADDONS_DIR / "pak01_dir.vpk").exists() else ADDONS_DIR / "pak01_dir.vpk"
-            pack_vpk_files(files_to_pack, dest_pak)
+        # Always strictly ensure pak02_dir.vpk is deployed
+        dest_pak = ADDONS_DIR / "pak02_dir.vpk"
+        pack_vpk_files(files_to_pack, dest_pak)
+        if str(dest_pak) not in deployed_paths:
             deployed_paths.append(str(dest_pak))
 
         print(f"\n[SUCCESS] Deployed working Scamlock to: {', '.join(deployed_paths)}")
@@ -172,10 +175,8 @@ def main():
     import zipfile
     zip_path = BASE_DIR / "Scamlock.zip"
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
-        # Standard GameBanana root file
+        # Standard release VPK at root (clean 1-click install in Deadlock Mod Manager)
         zipf.write(local_scamlock_vpk, arcname="scamlock.vpk")
-        # Standard structure for Deadlock Mod Manager
-        zipf.write(local_scamlock_vpk, arcname="game/citadel/addons/scamlock.vpk")
         if (BASE_DIR / "README.md").is_file():
             zipf.write(BASE_DIR / "README.md", arcname="README.md")
         if (BASE_DIR / "GAMEBANANA.md").is_file():

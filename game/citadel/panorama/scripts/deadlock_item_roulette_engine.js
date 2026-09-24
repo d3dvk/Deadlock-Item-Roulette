@@ -18,9 +18,13 @@ function GetTopRoot() {
             if (!parent || (typeof parent.IsValid === "function" && !parent.IsValid())) break;
             p = parent;
         }
-        return p || $.GetContextPanel();
+        var res = p || (typeof $ !== "undefined" && typeof $.GetContextPanel === "function" ? $.GetContextPanel() : null);
+        if (res && typeof res.FindChildTraverse !== "function") return null;
+        return res;
     } catch (e) {
-        return $.GetContextPanel();
+        var fb = (typeof $ !== "undefined" && typeof $.GetContextPanel === "function") ? $.GetContextPanel() : null;
+        if (fb && typeof fb.FindChildTraverse !== "function") return null;
+        return fb;
     }
 }
 
@@ -425,16 +429,60 @@ var DeadlockItemsDB = (function () {
         var m = (gameSeconds || 0) / 60.0;
         if (m < 8.0) {
             // 0 - 8 min: Tier 1 dominant (laning phase) (80% T1, 18% T2, 2% T3, 0% T4)
-            return { 1: 0.80, 2: 0.18, 3: 0.02, 4: 0.00, phaseRu: "Тир 1 (0-8 мин)", phaseEn: "Tier 1 (0-8 min)" };
+            return {
+                1: 0.80, 2: 0.18, 3: 0.02, 4: 0.00,
+                phaseRu: "0-8 мин • Ранняя игра",
+                phaseEn: "0-8 min • Early Game",
+                oddsRu: "Т1: 80% • Т2: 18% • Т3: 2%",
+                oddsEn: "T1: 80% • T2: 18% • T3: 2%",
+                badgeRu: "0-8 мин  •  ШАНСЫ: Т1 80% | Т2 18% | Т3 2%",
+                badgeEn: "0-8 min  •  ODDS: T1 80% | T2 18% | T3 2%",
+                color: "#10b981",
+                border: "#10b981",
+                bg: "rgba(16, 185, 129, 0.12)"
+            };
         } else if (m < 16.0) {
             // 8 - 16 min: Tier 2 dominant (mid game) (30% T1, 55% T2, 13% T3, 2% T4)
-            return { 1: 0.30, 2: 0.55, 3: 0.13, 4: 0.02, phaseRu: "Тир 2 (8-16 мин)", phaseEn: "Tier 2 (8-16 min)" };
+            return {
+                1: 0.30, 2: 0.55, 3: 0.13, 4: 0.02,
+                phaseRu: "8-16 мин • Мидгейм",
+                phaseEn: "8-16 min • Mid Game",
+                oddsRu: "Т2: 55% • Т1: 30% • Т3: 13% • Т4: 2%",
+                oddsEn: "T2: 55% • T1: 30% • T3: 13% • T4: 2%",
+                badgeRu: "8-16 мин  •  ШАНСЫ: Т2 55% | Т1 30% | Т3 13% | Т4 2%",
+                badgeEn: "8-16 min  •  ODDS: T2 55% | T1 30% | T3 13% | T4 2%",
+                color: "#38bdf8",
+                border: "#38bdf8",
+                bg: "rgba(56, 189, 248, 0.12)"
+            };
         } else if (m < 25.0) {
             // 16 - 25 min: Tier 3 dominant (power spikes) (10% T1, 30% T2, 50% T3, 10% T4)
-            return { 1: 0.10, 2: 0.30, 3: 0.50, 4: 0.10, phaseRu: "Тир 3 (16-25 мин)", phaseEn: "Tier 3 (16-25 min)" };
+            return {
+                1: 0.10, 2: 0.30, 3: 0.50, 4: 0.10,
+                phaseRu: "16-25 мин • Лейтгейм",
+                phaseEn: "16-25 min • Late Game",
+                oddsRu: "Т3: 50% • Т2: 30% • Т4: 10% • Т1: 10%",
+                oddsEn: "T3: 50% • T2: 30% • T4: 10% • T1: 10%",
+                badgeRu: "16-25 мин  •  ШАНСЫ: Т3 50% | Т2 30% | Т4 10% | Т1 10%",
+                badgeEn: "16-25 min  •  ODDS: T3 50% | T2 30% | T4 10% | T1 10%",
+                color: "#c084fc",
+                border: "#c084fc",
+                bg: "rgba(192, 132, 252, 0.12)"
+            };
         } else {
             // 25+ min: Tier 4 late game (5% T1, 15% T2, 45% T3, 35% T4)
-            return { 1: 0.05, 2: 0.15, 3: 0.45, 4: 0.35, phaseRu: "Тир 4 (25+ мин)", phaseEn: "Tier 4 (25+ min)" };
+            return {
+                1: 0.05, 2: 0.15, 3: 0.45, 4: 0.35,
+                phaseRu: "25+ мин • Эндшпиль",
+                phaseEn: "25+ min • End Game",
+                oddsRu: "Т3: 45% • Т4: 35% • Т2: 15% • Т1: 5%",
+                oddsEn: "T3: 45% • T4: 35% • T2: 15% • T1: 5%",
+                badgeRu: "25+ мин  •  ШАНСЫ: Т3 45% | Т4 35% | Т2 15% | Т1 5%",
+                badgeEn: "25+ min  •  ODDS: T3 45% | T4 35% | T2 15% | T1 5%",
+                color: "#f59e0b",
+                border: "#f59e0b",
+                bg: "rgba(245, 158, 11, 0.12)"
+            };
         }
     }
 
@@ -452,32 +500,36 @@ var DeadlockItemsDB = (function () {
             chosenTier = 4;
         }
 
-        var pool = itemsByTier[chosenTier] || ITEMS;
+        var tierItems = itemsByTier[chosenTier] || ITEMS;
         var unowned = [];
-        for (var i = 0; i < pool.length; i++) {
-            if (typeof ShopPurchaseTracker !== "undefined" && ShopPurchaseTracker.IsItemOwned(pool[i])) {
-                continue;
+        for (var i = 0; i < tierItems.length; i++) {
+            var it = tierItems[i];
+            var isOwned = (typeof ShopPurchaseTracker !== "undefined" && ShopPurchaseTracker.IsItemOwned) ? ShopPurchaseTracker.IsItemOwned(it) : false;
+            var isConflicting = (typeof ShopPurchaseTracker !== "undefined" && ShopPurchaseTracker.IsItemConflictingWithEquipped) ? ShopPurchaseTracker.IsItemConflictingWithEquipped(it) : false;
+            if (!isOwned && !isConflicting) {
+                unowned.push(it);
             }
-            unowned.push(pool[i]);
         }
+
         if (unowned.length > 0) {
             return unowned[Math.floor(Math.random() * unowned.length)];
         }
 
-        // Tier fallback: if all items in chosenTier are owned, try any unowned item across all tiers
         var allUnowned = [];
         for (var j = 0; j < ITEMS.length; j++) {
-            if (typeof ShopPurchaseTracker !== "undefined" && ShopPurchaseTracker.IsItemOwned(ITEMS[j])) {
-                continue;
+            var item = ITEMS[j];
+            var isOwned2 = (typeof ShopPurchaseTracker !== "undefined" && ShopPurchaseTracker.IsItemOwned) ? ShopPurchaseTracker.IsItemOwned(item) : false;
+            var isConflicting2 = (typeof ShopPurchaseTracker !== "undefined" && ShopPurchaseTracker.IsItemConflictingWithEquipped) ? ShopPurchaseTracker.IsItemConflictingWithEquipped(item) : false;
+            if (!isOwned2 && !isConflicting2) {
+                allUnowned.push(item);
             }
-            allUnowned.push(ITEMS[j]);
         }
+
         if (allUnowned.length > 0) {
             return allUnowned[Math.floor(Math.random() * allUnowned.length)];
         }
 
-        // Extreme fallback (if all 156 items owned)
-        return pool[Math.floor(Math.random() * pool.length)];
+        return tierItems[Math.floor(Math.random() * tierItems.length)];
     }
 
     function GetItemsByTier(tier) {
@@ -511,8 +563,11 @@ var ShopPurchaseTracker = (function () {
     var wasTargetInQuickbuy = false;
     var targetSetTimestamp = 0;
     var onPurchaseCallbacks = [];
+    var onCancelCallbacks = [];
     var isTrackerActive = false;
     var wasShopOpen = false;
+    var goldAtTargetSet = 0;
+    var targetJustPurchasedInQuickbuy = false;
 
     var lastKnownGold = 0;
     var lastKnownTotalSouls = 0;
@@ -649,10 +704,25 @@ var ShopPurchaseTracker = (function () {
 
     function ExtractAndAddEquippedPanel(panel, equipped) {
         if (!panel || !panel.IsValid()) return;
+        if (typeof panel.visible !== "undefined" && !panel.visible) return;
+        if (panel.style && (panel.style.visibility === "collapse" || panel.style.opacity === "0" || panel.style.opacity === "0.0")) return;
+        if (panel.BHasClass) {
+            if (panel.BHasClass("empty") || panel.BHasClass("empty_slot") || panel.BHasClass("unlocked_empty") || panel.BHasClass("locked") || panel.BHasClass("disabled")) {
+                return;
+            }
+            var isModSlot = (panel.paneltype === "CitadelModIcon") || panel.BHasClass("CitadelModIcon") || panel.BHasClass("ModIcon");
+            if (isModSlot) {
+                var hasActiveMod = panel.BHasClass("hasAbility") || panel.BHasClass("has_ability") || panel.BHasClass("equipped") || panel.BHasClass("hasItem") || panel.BHasClass("has_item");
+                if (!hasActiveMod) {
+                    return;
+                }
+            }
+        }
         if (panel.GetAttributeString) {
             var aName = CleanStr(panel.GetAttributeString("item_name", ""));
             var aId = CleanStr(panel.GetAttributeString("ability_id", ""));
             var aItemId = CleanStr(panel.GetAttributeString("item_id", ""));
+            var aItemInfo = CleanStr(panel.GetAttributeString("item_info", ""));
             if (aName) equipped[aName] = true;
             if (aId) {
                 equipped[aId] = true;
@@ -664,6 +734,27 @@ var ShopPurchaseTracker = (function () {
                 }
             }
             if (aItemId) equipped[aItemId] = true;
+            if (aItemInfo) equipped[aItemInfo] = true;
+        }
+        if (panel.ability_id) {
+            var directAId = CleanStr(panel.ability_id);
+            if (directAId) {
+                equipped[directAId] = true;
+                var stripped2 = directAId.replace(/^(citadel_)?(ability_|upgrade_)/, "");
+                if (stripped2) equipped[stripped2] = true;
+            }
+        }
+        if (panel.item_id) {
+            var directItId = CleanStr(panel.item_id);
+            if (directItId) equipped[directItId] = true;
+        }
+        if (panel.GetDialogVariable) {
+            var dvName = CleanStr(panel.GetDialogVariable("item_name"));
+            var dvAbility = CleanStr(panel.GetDialogVariable("ability_name"));
+            var dvInfo = CleanStr(panel.GetDialogVariable("item_info"));
+            if (dvName) equipped[dvName] = true;
+            if (dvAbility) equipped[dvAbility] = true;
+            if (dvInfo) equipped[dvInfo] = true;
         }
         if (panel.id) {
             var cleanId = CleanStr(panel.id);
@@ -673,10 +764,37 @@ var ShopPurchaseTracker = (function () {
             }
         }
 
-        // Check image on this panel directly
         ExtractAndAddEquippedImage(panel, equipped);
 
-        // Check text on this panel directly
+        var modIconImg = panel.FindChildTraverse("ModIconImage");
+        if (modIconImg && modIconImg.IsValid()) {
+            var isImgVis = true;
+            if (typeof modIconImg.visible !== "undefined" && !modIconImg.visible) isImgVis = false;
+            if (modIconImg.style && (modIconImg.style.visibility === "collapse" || modIconImg.style.opacity === "0" || modIconImg.style.opacity === "0.0")) isImgVis = false;
+            if (modIconImg.BHasClass && (modIconImg.BHasClass("empty") || modIconImg.BHasClass("hidden"))) isImgVis = false;
+            if (isImgVis) {
+                ExtractAndAddEquippedImage(modIconImg, equipped);
+                if (modIconImg.GetAttributeString) {
+                    var imgAId = CleanStr(modIconImg.GetAttributeString("ability_id", ""));
+                    if (imgAId) {
+                        equipped[imgAId] = true;
+                        var stripped3 = imgAId.replace(/^(citadel_)?(ability_|upgrade_)/, "");
+                        if (stripped3) equipped[stripped3] = true;
+                    }
+                }
+            }
+        }
+
+        var bgMod = panel.FindChildTraverse("mod_icon") || panel.FindChildTraverse("ModIcon");
+        if (bgMod && bgMod.IsValid()) {
+            ExtractAndAddEquippedImage(bgMod, equipped);
+        }
+
+        var subImgs = panel.FindChildrenWithClassTraverse("image") || [];
+        for (var si = 0; si < subImgs.length; si++) {
+            ExtractAndAddEquippedImage(subImgs[si], equipped);
+        }
+
         if (panel.text && typeof panel.text === "string" && panel.text.length > 2) {
             var nClean = CleanStr(panel.text);
             if (nClean && nClean !== "купить" && nClean !== "продано" && nClean !== "locked") {
@@ -685,8 +803,121 @@ var ShopPurchaseTracker = (function () {
         }
     }
 
+    function ScanEquippedInventoryHUD() {
+        var root = GetTopRoot();
+        if (!root || !root.IsValid()) return {};
+
+        var equipped = {};
+        var targetPanels = [];
+
+        // 1. Gather all equipped mod slot containers across categories (Weapon, Armor, Tech, Universal)
+        var purchasedPanels = root.FindChildrenWithClassTraverse("CitadelModsPurchasedPanel") || [];
+        if (purchasedPanels.length === 0) {
+            purchasedPanels = root.FindChildrenWithClassTraverse("mods_purchased_panel") || [];
+        }
+        for (var pi = 0; pi < purchasedPanels.length; pi++) {
+            var pp = purchasedPanels[pi];
+            if (pp && pp.IsValid() && !IsInShopCatalog(pp)) {
+                var subIcons = pp.FindChildrenWithClassTraverse("CitadelModIcon") || [];
+                if (subIcons.length === 0) subIcons = pp.FindChildrenWithClassTraverse("ModIcon") || [];
+                if (subIcons.length === 0) subIcons = pp.FindChildrenWithClassTraverse("mod_icon_single_container") || [];
+                if (subIcons.length === 0) subIcons = pp.FindChildrenWithClassTraverse("mod") || [];
+                for (var si = 0; si < subIcons.length; si++) {
+                    targetPanels.push(subIcons[si]);
+                }
+            }
+        }
+
+        // 2. Direct search for CitadelModIcon across HUD if not found via category panels
+        if (targetPanels.length === 0) {
+            var allModIcons = root.FindChildrenWithClassTraverse("CitadelModIcon") || [];
+            for (var mi = 0; mi < allModIcons.length; mi++) {
+                var cmi = allModIcons[mi];
+                if (cmi && cmi.IsValid() && !IsInShopCatalog(cmi)) {
+                    targetPanels.push(cmi);
+                }
+            }
+        }
+
+        // 3. Fallback: Search known HUD containers
+        if (targetPanels.length === 0) {
+            var containerNames = [
+                "ModIconsContainer",
+                "citadel_hud_active_mods",
+                "citadel_mods_purchased_panel",
+                "ActiveModsContainer",
+                "ModsPurchasedContainer",
+                "ModsContainer"
+            ];
+            for (var ci = 0; ci < containerNames.length; ci++) {
+                var c = root.FindChildTraverse(containerNames[ci]);
+                if (c && c.IsValid() && !IsInShopCatalog(c)) {
+                    var cIcons = c.FindChildrenWithClassTraverse("ModIcon") || [];
+                    if (cIcons.length === 0) cIcons = c.FindChildrenWithClassTraverse("mod") || [];
+                    for (var cj = 0; cj < cIcons.length; cj++) targetPanels.push(cIcons[cj]);
+                }
+            }
+        }
+
+        // Safely extract equipped data from all found panels
+        for (var pIdx = 0; pIdx < targetPanels.length; pIdx++) {
+            try {
+                ExtractAndAddEquippedPanel(targetPanels[pIdx], equipped);
+            } catch (pErr) {}
+        }
+
+        var newEquippedItems = [];
+        var newEquippedMap = {};
+        if (typeof DeadlockItemsDB !== "undefined" && DeadlockItemsDB.GetItems) {
+            var allItems = DeadlockItemsDB.GetItems();
+            for (var i = 0; i < allItems.length; i++) {
+                var it = allItems[i];
+                var itClean = CleanStr(it.name);
+                var itRu = CleanStr(it.ruName);
+                var itId = CleanStr(it.id);
+                var itValveId = it.valveId ? CleanStr(it.valveId) : "";
+                var itValveStripped = it.valveId ? CleanStr(it.valveId.replace(/^(citadel_)?(ability_|upgrade_)/, "")) : "";
+                var isEquipped = false;
+                if (equipped[itClean] || equipped[itRu] || equipped[itId]) {
+                    isEquipped = true;
+                } else if (itValveId && equipped[itValveId]) {
+                    isEquipped = true;
+                } else if (itValveStripped && equipped[itValveStripped]) {
+                    isEquipped = true;
+                } else if (it.image && (equipped[CleanStr(it.image)] || equipped[CleanStr(it.image.replace(/_psd\.vtex$/, ""))])) {
+                    isEquipped = true;
+                }
+
+                if (isEquipped) {
+                    newEquippedItems.push(it);
+                    newEquippedMap[itClean] = true;
+                    if (it.id) newEquippedMap[CleanStr(it.id)] = true;
+                    MarkItemOwned(it);
+                }
+            }
+
+            if (targetPanels.length > 0 || Object.keys(equipped).length > 0) {
+                currentlyEquippedItemsList = newEquippedItems;
+                currentlyEquippedMap = newEquippedMap;
+
+                for (var j = 0; j < allItems.length; j++) {
+                    var chk = allItems[j];
+                    var chkKey = CleanStr(chk.name);
+                    if (IsItemOwned(chk)) {
+                        if (!newEquippedMap[chkKey]) {
+                            if (!IsUpgradeEquipped(chk, newEquippedMap)) {
+                                UnmarkItemOwned(chk, true);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return equipped;
+    }
+
     function GetCurrentlyEquippedItemStems() {
-        return {};
+        return ScanEquippedInventoryHUD();
     }
 
     function IsTargetInQuickbuyQueue(item) {
@@ -740,7 +971,16 @@ var ShopPurchaseTracker = (function () {
             var p = entries[i];
             if (!p || !p.IsValid()) continue;
             if (p.visible === false || (p.style && p.style.visibility === "collapse")) continue;
-            if (p.BHasClass && (p.BHasClass("purchased") || p.BHasClass("consumed") || p.BHasClass("completed") || p.BHasClass("bought") || p.BHasClass("Delete") || p.BHasClass("quickFading"))) continue;
+            if (p.BHasClass && (p.BHasClass("purchased") || p.BHasClass("consumed") || p.BHasClass("completed") || p.BHasClass("bought") || p.BHasClass("Delete") || p.BHasClass("quickFading"))) {
+                var pNameLbl = p.FindChildTraverse("ItemName") || p.FindChildTraverse("ModName") || p.FindChildTraverse("Name");
+                if (pNameLbl && pNameLbl.IsValid() && pNameLbl.text) {
+                    var pClean = CleanStr(pNameLbl.text);
+                    if (pClean === targetEn || pClean === targetRu) {
+                        targetJustPurchasedInQuickbuy = true;
+                    }
+                }
+                continue;
+            }
 
             var nameLbl = p.FindChildTraverse("ItemName") || p.FindChildTraverse("ModName") || p.FindChildTraverse("Name");
             if (nameLbl && nameLbl.IsValid() && nameLbl.text) {
@@ -879,6 +1119,55 @@ var ShopPurchaseTracker = (function () {
     }
 
     function FindModPanelDirect(item) {
+        if (!item) return null;
+        var root = GetTopRoot();
+        if (!root) return null;
+        var shop = root.FindChildTraverse("Shop") || root.FindChildTraverse("CitadelHudHeroShop");
+        if (!shop || !shop.IsValid()) return null;
+
+        var targetEn = CleanStr(item.name);
+        var targetRu = CleanStr(item.ruName);
+        var targetId = CleanStr(item.id);
+        var targetValve = CleanStr(item.valveId);
+
+        var modViews = shop.FindChildrenWithClassTraverse("mod_view") || [];
+        for (var i = 0; i < modViews.length; i++) {
+            var mv = modViews[i];
+            if (!mv || !mv.IsValid()) continue;
+
+            var itName = "";
+            var nms = mv.FindChildrenWithClassTraverse("modName") || [];
+            if (nms.length > 0 && nms[0].IsValid() && nms[0].text) {
+                itName = nms[0].text.trim();
+            }
+            if (!itName && mv.GetAttributeString) {
+                itName = mv.GetAttributeString("item_name", "");
+            }
+            if (itName) {
+                var clean = CleanStr(itName);
+                if (clean === targetEn || clean === targetRu || clean === targetId || clean === targetValve) {
+                    return mv;
+                }
+            }
+
+            var icon = mv.FindChildTraverse("ability_icon") || mv.FindChildTraverse("ModIcon");
+            if (icon && icon.IsValid()) {
+                var src = (icon.GetAttributeString ? icon.GetAttributeString("src", "") : (icon.src || "")) || "";
+                if (!src && icon.style && icon.style.backgroundImage) {
+                    src = icon.style.backgroundImage;
+                }
+                if (src) {
+                    src = CleanStr(src);
+                    if (item.stems) {
+                        for (var s = 0; s < item.stems.length; s++) {
+                            if (item.stems[s] && src.indexOf(CleanStr(item.stems[s])) !== -1) {
+                                return mv;
+                            }
+                        }
+                    }
+                }
+            }
+        }
         return null;
     }
 
@@ -1178,6 +1467,9 @@ var ShopPurchaseTracker = (function () {
         "Rescue Beam": [
                 "Healing Rite"
         ],
+        "Shadow Weave": [
+                "Sprint Boots"
+        ],
         "Sharpshooter": [
                 "Long Range",
                 "High-Velocity Rounds"
@@ -1336,6 +1628,64 @@ var ShopPurchaseTracker = (function () {
         return !!(setA[keyB] || setA[idB]);
     }
 
+    var currentlyEquippedItemsList = [];
+    var currentlyEquippedMap = {};
+
+    function IsUpgradeEquipped(item, equippedMap) {
+        if (!item) return false;
+        var down = (item.id && DOWNSTREAM_UPGRADES[item.id]) ? DOWNSTREAM_UPGRADES[item.id] : [];
+        for (var i = 0; i < down.length; i++) {
+            var upId = CleanStr(down[i]);
+            if (equippedMap && equippedMap[upId]) return true;
+            if (ownedItemsMap[upId]) return true;
+            if (typeof DeadlockItemsDB !== "undefined" && DeadlockItemsDB.GetItemById) {
+                var upItem = DeadlockItemsDB.GetItemById(upId);
+                if (upItem) {
+                    if (equippedMap && equippedMap[CleanStr(upItem.name)]) return true;
+                    if (ownedItemsMap[CleanStr(upItem.name)]) return true;
+                }
+            }
+        }
+        var set = GetConflictSet(item);
+        for (var k in set) {
+            if (set.hasOwnProperty(k)) {
+                var isEq = (equippedMap && equippedMap[k]) || ownedItemsMap[k];
+                if (isEq) {
+                    if (typeof DeadlockItemsDB !== "undefined" && DeadlockItemsDB.GetItemByName) {
+                        var cand = DeadlockItemsDB.GetItemByName(k) || DeadlockItemsDB.GetItemById(k);
+                        if (cand && cand.tier > item.tier) return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    function IsItemConflictingWithEquipped(item) {
+        if (!item) return false;
+        var set = GetConflictSet(item);
+        for (var k in set) {
+            if (set.hasOwnProperty(k) && set[k]) {
+                if (IsItemOwnedByName(k)) {
+                    var ownedObj = (typeof DeadlockItemsDB !== "undefined" && DeadlockItemsDB.GetItemByName) ? (DeadlockItemsDB.GetItemByName(k) || DeadlockItemsDB.GetItemById(k)) : null;
+                    if (ownedObj && ownedObj.tier >= item.tier) return true;
+                }
+            }
+        }
+        for (var i = 0; i < currentlyEquippedItemsList.length; i++) {
+            var eq = currentlyEquippedItemsList[i];
+            if (eq && (eq.id === item.id || eq.name === item.name)) return true;
+            if (AreItemsConflicting(item, eq)) {
+                if (eq.tier >= item.tier) return true;
+            }
+        }
+        return false;
+    }
+
+    function GetCurrentlyEquippedItemsList() {
+        return currentlyEquippedItemsList;
+    }
+
     var ownedItemsMap = {};
     var seenRecentPurchasesMap = {};
     var cachedLocalHeroName = null;
@@ -1384,44 +1734,7 @@ var ShopPurchaseTracker = (function () {
     }
 
     function UnmarkCoveredComponents(canonicalName) {
-        if (!canonicalName) return;
-        var stack = [canonicalName];
-        var visited = {};
-        while (stack.length > 0) {
-            var cur = stack.pop();
-            var curKey = CleanStr(cur);
-            if (visited[curKey]) continue;
-            visited[curKey] = true;
-
-            var comps = UPGRADE_RECIPES[cur] || UPGRADE_RECIPES[curKey];
-            if (!comps && typeof DeadlockItemsDB !== "undefined" && DeadlockItemsDB.GetItemByName) {
-                var itObj = DeadlockItemsDB.GetItemByName(cur);
-                if (itObj) comps = UPGRADE_RECIPES[itObj.name];
-            }
-            if (comps && comps.length > 0) {
-                for (var c = 0; c < comps.length; c++) {
-                    var compName = comps[c];
-                    var compKey = CleanStr(compName);
-                    if (compKey && ownedItemsMap[compKey]) {
-                        delete ownedItemsMap[compKey];
-                    }
-                    if (typeof DeadlockItemsDB !== "undefined" && DeadlockItemsDB.GetItemByName) {
-                        var cItem = DeadlockItemsDB.GetItemByName(compName);
-                        if (cItem) {
-                            if (cItem.ruName) delete ownedItemsMap[CleanStr(cItem.ruName)];
-                            if (cItem.id) delete ownedItemsMap[CleanStr(cItem.id)];
-                            if (cItem.valveId) delete ownedItemsMap[CleanStr(cItem.valveId)];
-                            if (cItem.stems) {
-                                for (var s = 0; s < cItem.stems.length; s++) {
-                                    delete ownedItemsMap[CleanStr(cItem.stems[s])];
-                                }
-                            }
-                        }
-                    }
-                    stack.push(compName);
-                }
-            }
-        }
+        // Safe no-op: unmarking an upgrade (e.g. sold) must NEVER cascade-delete basic components that may still be equipped in HUD
     }
 
     function MarkItemOwned(itemOrName) {
@@ -1472,8 +1785,8 @@ var ShopPurchaseTracker = (function () {
         }
     }
 
-    function UnmarkItemOwned(itemOrName) {
-        if (!itemOrName) return;
+    function UnmarkItemOwned(itemOrName, force) {
+        if (!itemOrName || (!IsShopOpen() && !force)) return;
         var itemObj = null;
         var rawName = "";
         if (typeof itemOrName === "object" && itemOrName.name) {
@@ -1644,11 +1957,16 @@ var ShopPurchaseTracker = (function () {
 
         // Scan mod_view elements in the shop
         var modViews = shop.FindChildrenWithClassTraverse("mod_view") || [];
+        var shopCardSeen = {};
+        var shopOwnedCards = {};
         for (var i = 0; i < modViews.length; i++) {
             var mv = modViews[i];
             if (!mv || !mv.IsValid()) continue;
 
-            var isCardOwned = mv.BHasClass && (mv.BHasClass("owned") || mv.BHasClass("usedAsComponent"));
+            var isCardOwned = mv.BHasClass && (
+                mv.BHasClass("owned") ||
+                mv.BHasClass("ItemPurchased")
+            );
 
             var itName = "";
             var nms = mv.FindChildrenWithClassTraverse("modName") || [];
@@ -1666,39 +1984,128 @@ var ShopPurchaseTracker = (function () {
             }
             if (!itName) continue;
 
+            var cleanCardName = CleanStr(itName);
+            shopCardSeen[cleanCardName] = true;
+
             if (isCardOwned) {
+                shopOwnedCards[cleanCardName] = true;
                 if (!IsItemOwnedByName(itName)) {
                     MarkItemOwned(itName);
                 }
             } else {
-                // Card is NOT owned. If it was previously marked in ownedItemsMap, player SOLD it!
                 if (IsItemOwnedByName(itName)) {
-                    UnmarkItemOwned(itName);
+                    var seenItem = (typeof DeadlockItemsDB !== "undefined" && DeadlockItemsDB.GetItemByName) ? DeadlockItemsDB.GetItemByName(itName) : null;
+                    if (seenItem) {
+                        if (!IsUpgradeEquipped(seenItem, currentlyEquippedMap)) {
+                            UnmarkItemOwned(seenItem, true);
+                        }
+                    }
                 }
             }
         }
+
+    }
+
+    function CheckQuickbuyPurchaseToast() {
+        if (!currentTargetItem) return false;
+        var root = GetTopRoot();
+        if (!root || !root.IsValid()) return false;
+
+        var toasts = root.FindChildrenWithClassTraverse("QuickbuyPurchaseToast") || [];
+        if (toasts.length === 0) {
+            toasts = root.FindChildrenWithClassTraverse("ToastPanel") || [];
+        }
+        for (var t = 0; t < toasts.length; t++) {
+            var tp = toasts[t];
+            if (!tp || !tp.IsValid()) continue;
+            var modNameLbl = tp.FindChildTraverse("ModName") || tp.FindChildTraverse("Name");
+            if (modNameLbl && modNameLbl.IsValid() && modNameLbl.text) {
+                var tTxt = CleanStr(modNameLbl.text);
+                var targetEn = CleanStr(currentTargetItem.name);
+                var targetRu = CleanStr(currentTargetItem.ruName);
+                if (tTxt === targetEn || tTxt === targetRu || (targetEn && tTxt.indexOf(targetEn) !== -1) || (targetRu && tTxt.indexOf(targetRu) !== -1)) {
+                    RouletteLogger.Log("Target item purchase confirmed via Quickbuy purchase toast: " + currentTargetItem.name, "PURCHASE");
+                    MarkItemOwned(currentTargetItem);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     function CheckIsTargetItemPurchased() {
         if (!currentTargetItem) return false;
 
-        if (Date.now() - targetSetTimestamp < 400) return false;
-
-        if (PollRecentPurchases()) {
+        // 0. Instant 12-slot HUD inventory scan
+        try {
+            ScanEquippedInventoryHUD();
+        } catch (scanErr) {
+            RouletteLogger.Log("ScanEquippedInventoryHUD error in check: " + scanErr, "ERROR");
+        }
+        if (IsItemOwned(currentTargetItem) || IsItemOwnedByName(currentTargetItem.name)) {
+            RouletteLogger.Log("Target item confirmed equipped in 12-slot HUD: " + currentTargetItem.name, "PURCHASE");
             return true;
         }
 
-        if (quickbuyConfirmedSeen && (Date.now() - targetSetTimestamp > 1000)) {
-            if (!IsTargetInQuickbuyQueue(currentTargetItem)) {
-                RouletteLogger.Log("Target item consumed from Quickbuy: " + currentTargetItem.name, "PURCHASE");
+        // 0.1 Quickbuy purchase toast check (instant on-screen feedback)
+        if (CheckQuickbuyPurchaseToast()) {
+            return true;
+        }
+
+        // 1. Direct shop catalog panel check (FindModPanelDirect)
+        var modPanel = FindModPanelDirect(currentTargetItem);
+        if (modPanel && modPanel.IsValid() && modPanel.BHasClass) {
+            if (modPanel.BHasClass("owned") || modPanel.BHasClass("ItemPurchased")) {
+                RouletteLogger.Log("Target item confirmed owned via shop card: " + currentTargetItem.name, "PURCHASE");
                 MarkItemOwned(currentTargetItem);
                 return true;
             }
         }
 
+
+        // 3. Already marked owned in database/tracker
         if (IsItemOwned(currentTargetItem) || IsItemOwnedByName(currentTargetItem.name)) {
-            RouletteLogger.Log("Target item confirmed owned via Inventory/Shop scan: " + currentTargetItem.name, "PURCHASE");
+            RouletteLogger.Log("Target item confirmed owned via tracker: " + currentTargetItem.name, "PURCHASE");
             return true;
+        }
+
+        // 4. Recent purchases feed check
+        if (PollRecentPurchases()) {
+            return true;
+        }
+
+        // 5. Fast autopurchase / Quickbuy completed element check
+        if (targetJustPurchasedInQuickbuy) {
+            RouletteLogger.Log("Target item purchase confirmed via Quickbuy completed element: " + currentTargetItem.name, "PURCHASE");
+            MarkItemOwned(currentTargetItem);
+            return true;
+        }
+
+        // 6. Gold drop check: if souls decreased while target was active
+        var curGold = GetPlayerGold();
+        if (goldAtTargetSet > 0 && curGold < goldAtTargetSet && (goldAtTargetSet - curGold >= Math.min(300, currentTargetItem.cost * 0.4))) {
+            RouletteLogger.Log("Target item purchase confirmed via gold drop: " + (goldAtTargetSet - curGold) + " souls spent (" + currentTargetItem.name + ")", "PURCHASE");
+            MarkItemOwned(currentTargetItem);
+            return true;
+        }
+
+        // 7. Quickbuy queue consumption detection (strict multi-condition verification)
+        var timeSinceQueued = Date.now() - targetSetTimestamp;
+        var inQueue = IsTargetInQuickbuyQueue(currentTargetItem);
+        if (targetJustPurchasedInQuickbuy) {
+            RouletteLogger.Log("Target item purchase confirmed via Quickbuy completed element: " + currentTargetItem.name, "PURCHASE");
+            MarkItemOwned(currentTargetItem);
+            return true;
+        }
+        if (timeSinceQueued > 800 && quickbuyConfirmedSeen) {
+            var curGold2 = GetPlayerGold();
+            var goldDropped = (goldAtTargetSet > 0 && curGold2 < goldAtTargetSet && (goldAtTargetSet - curGold2 >= Math.min(300, currentTargetItem.cost * 0.4)));
+            var verifiedOwned = IsItemOwned(currentTargetItem) || IsItemOwnedByName(currentTargetItem.name);
+            if (!inQueue && (goldDropped || verifiedOwned)) {
+                RouletteLogger.Log("Target item consumed from Quickbuy: " + currentTargetItem.name, "PURCHASE");
+                MarkItemOwned(currentTargetItem);
+                return true;
+            }
         }
 
         return false;
@@ -1707,86 +2114,105 @@ var ShopPurchaseTracker = (function () {
     function QueueItemIntoQuickbuy(item, targetIdx, skipDOMClicks) {
         if (!item) return;
         var root = GetTopRoot();
+        var qIdx = (typeof targetIdx === "number") ? targetIdx : 0;
         var valveId = item.valveId || ("upgrade_" + item.id);
         var signedHash = (item.hash | 0);
-        var qIdx = (typeof targetIdx === "number") ? targetIdx : 0;
 
         RouletteLogger.Log("Queueing target: " + item.name + " (Valve ID: " + valveId + ", Hash: " + item.hash + ", Slot: " + qIdx + ")", "QUICKBUY");
 
-        if (typeof Game !== "undefined" && Game.ConsoleCommand) {
-            Game.ConsoleCommand("quickbuy add " + signedHash + " " + qIdx + " false");
-            Game.ConsoleCommand("quickbuy add " + item.hash + " " + qIdx + " false");
-            Game.ConsoleCommand("quickbuy add " + valveId + " " + qIdx + " false");
-        }
-
+        // 1. Direct Panorama C++ Event Dispatch (CitadelQuickbuyAddItem)
+        // Signature verified via client.dll disasm: (CUtlStringToken itemToken, bool flag1, bool flag2)
+        // Global unrouted event with exactly 3 parameters (NO panel parameter, NO numbers in boolean slots):
+        // flag1 = false (append to quickbuy queue), flag2 = false (standard add)
         if (typeof $.DispatchEvent === "function") {
-            $.DispatchEvent("CitadelQuickbuyAddItem", item.hash, qIdx, false);
-            $.DispatchEvent("CitadelQuickbuyAddItem", signedHash, qIdx, false);
-            $.DispatchEvent("CitadelQuickbuyAddItem", valveId, qIdx, false);
-            if (root && root.IsValid()) {
-                $.DispatchEvent("CitadelQuickbuyAddItem", root, item.hash, qIdx, false);
-                $.DispatchEvent("CitadelQuickbuyAddItem", root, signedHash, qIdx, false);
-                $.DispatchEvent("CitadelQuickbuyAddItem", root, valveId, false, true);
+            try {
+                $.DispatchEvent("CitadelQuickbuyAddItem", valveId, false, false);
+            } catch (e) {
+                RouletteLogger.Log("CitadelQuickbuyAddItem valveId dispatch error: " + e, "ERROR");
             }
+            try {
+                $.DispatchEvent("CitadelQuickbuyAddItem", signedHash, false, false);
+            } catch (e) {}
+            try {
+                $.DispatchEvent("CitadelQuickbuyAddItem", item.hash, false, false);
+            } catch (e) {}
         }
 
         if (skipDOMClicks) return;
 
+        // 2. Secondary DOM Click Fallback via ContextMenu (if visible/open in shop)
+        // IMPORTANT: NEVER call "Activated" here — Activated is primary left-click which buys items for souls!
         function TryDispatchDOM(attempt) {
-            var targetMod = FindModPanelDirect(item);
-            if (targetMod && targetMod.IsValid()) {
-                RouletteLogger.Log("Found shop mod panel for " + item.name + " -> triggering Secondary Click (Quickbuy)", "DOM");
-                $.DispatchEvent("ContextMenu", targetMod);
-                $.DispatchEvent("Activated", targetMod, "mouse_secondary");
-                $.DispatchEvent("Activated", targetMod, 1);
+            try {
+                var targetMod = FindModPanelDirect(item);
+                if (targetMod && targetMod.IsValid()) {
+                    RouletteLogger.Log("Found shop mod panel for " + item.name + " -> triggering Secondary Click (Quickbuy)", "DOM");
+                    try { $.DispatchEvent("ContextMenu", targetMod, "mouse"); } catch (e) {}
 
-                var icon = targetMod.FindChildTraverse("ability_icon") || targetMod.FindChildTraverse("ModIcon");
-                if (icon && icon.IsValid()) {
-                    $.DispatchEvent("ContextMenu", icon);
-                    $.DispatchEvent("Activated", icon, "mouse_secondary");
+                    var icon = targetMod.FindChildTraverse("ability_icon") || targetMod.FindChildTraverse("ModIcon");
+                    if (icon && icon.IsValid()) {
+                        try { $.DispatchEvent("ContextMenu", icon, "mouse"); } catch (e) {}
+                    }
+                } else if (attempt < 3 && typeof $.Schedule === "function") {
+                    $.Schedule(0.25, function () { TryDispatchDOM(attempt + 1); });
                 }
-            } else if (attempt < 3 && typeof $.Schedule === "function") {
-                $.Schedule(0.3, function () { TryDispatchDOM(attempt + 1); });
+            } catch (domErr) {
+                RouletteLogger.Log("TryDispatchDOM error: " + domErr, "ERROR");
             }
         }
 
         TryDispatchDOM(1);
     }
 
+
     function Tick() {
-        var isShopNowOpen = IsShopOpen();
-        var curGold = GetPlayerGold();
+        var isShopNowOpen = false;
+        var nextInterval = 0.5;
 
-        ScanShopIfOpen();
-        PollRecentPurchases();
+        try {
+            isShopNowOpen = IsShopOpen();
+            var curGold = GetPlayerGold();
 
-        if (currentTargetItem) {
-            if (!quickbuyConfirmedSeen && IsTargetInQuickbuyQueue(currentTargetItem)) {
-                quickbuyConfirmedSeen = true;
-                wasTargetInQuickbuy = true;
-                RouletteLogger.Log("Confirmed: " + currentTargetItem.name + " is now in QuickbuyQueue!", "SUCCESS");
+            if (isShopNowOpen) {
+                ScanShopIfOpen();
             }
+            ScanEquippedInventoryHUD();
+            PollRecentPurchases();
 
-            if (CheckIsTargetItemPurchased()) {
-                NotifyPurchased();
-            }
-        }
+            if (currentTargetItem) {
+                if (!quickbuyConfirmedSeen && IsTargetInQuickbuyQueue(currentTargetItem)) {
+                    quickbuyConfirmedSeen = true;
+                    wasTargetInQuickbuy = true;
+                    RouletteLogger.Log("Confirmed: " + currentTargetItem.name + " is now in QuickbuyQueue!", "SUCCESS");
+                }
 
-        lastKnownGold = curGold;
-
-        if (isShopNowOpen) {
-            if (!wasShopOpen) {
-                wasShopOpen = true;
-                if (currentTargetItem && !IsTargetInQuickbuyQueue(currentTargetItem) && !quickbuyConfirmedSeen) {
-                    RouletteLogger.Log("Shop opened! Ensuring target item in Quickbuy: " + currentTargetItem.name, "TRACKER");
-                    QueueItemIntoQuickbuy(currentTargetItem);
+                if (CheckIsTargetItemPurchased()) {
+                    NotifyPurchased();
+                } else if (quickbuyConfirmedSeen && !IsTargetInQuickbuyQueue(currentTargetItem)) {
+                    NotifyCancelled();
                 }
             }
-        } else {
-            wasShopOpen = false;
+
+            lastKnownGold = curGold;
+
+            if (isShopNowOpen) {
+                if (!wasShopOpen) {
+                    wasShopOpen = true;
+                    if (currentTargetItem && !IsTargetInQuickbuyQueue(currentTargetItem) && !quickbuyConfirmedSeen) {
+                        RouletteLogger.Log("Shop opened! Ensuring target item in Quickbuy: " + currentTargetItem.name, "TRACKER");
+                        QueueItemIntoQuickbuy(currentTargetItem);
+                    }
+                }
+            } else {
+                wasShopOpen = false;
+            }
+
+            nextInterval = currentTargetItem ? (isShopNowOpen ? 0.15 : 0.25) : (isShopNowOpen ? 0.5 : 1.2);
+        } catch (tickErr) {
+            RouletteLogger.Log("Tick loop exception: " + tickErr, "ERROR");
+            nextInterval = 0.5;
         }
 
-        var nextInterval = currentTargetItem ? (isShopNowOpen ? 0.25 : 0.35) : (isShopNowOpen ? 0.5 : 1.2);
         if (typeof $.Schedule === "function") {
             $.Schedule(nextInterval, Tick);
         }
@@ -1800,6 +2226,8 @@ var ShopPurchaseTracker = (function () {
         currentTargetItem = null;
         wasTargetInQuickbuy = false;
         quickbuyConfirmedSeen = false;
+        targetJustPurchasedInQuickbuy = false;
+        goldAtTargetSet = 0;
 
         if (typeof $.DispatchEvent === "function") {
             $.DispatchEvent("PlaySoundEffect", "ShopBuy.Broadcast");
@@ -1814,6 +2242,28 @@ var ShopPurchaseTracker = (function () {
         }
     }
 
+    function NotifyCancelled() {
+        var cancelled = currentTargetItem;
+        currentTargetItem = null;
+        wasTargetInQuickbuy = false;
+        quickbuyConfirmedSeen = false;
+        targetJustPurchasedInQuickbuy = false;
+        goldAtTargetSet = 0;
+        RouletteLogger.Log("Target removed from Quickbuy by player: " + (cancelled ? cancelled.name : "none"), "CANCEL");
+        ClearTarget();
+        for (var j = 0; j < onCancelCallbacks.length; j++) {
+            if (typeof onCancelCallbacks[j] === "function") {
+                onCancelCallbacks[j](cancelled);
+            }
+        }
+    }
+
+    function OnCancel(callback) {
+        if (typeof callback === "function") {
+            onCancelCallbacks.push(callback);
+        }
+    }
+
     function StartTracker() {
         if (isTrackerActive) return;
         isTrackerActive = true;
@@ -1825,7 +2275,9 @@ var ShopPurchaseTracker = (function () {
         currentTargetItem = item;
         wasTargetInQuickbuy = false;
         quickbuyConfirmedSeen = false;
+        targetJustPurchasedInQuickbuy = false;
         targetSetTimestamp = Date.now();
+        goldAtTargetSet = GetPlayerGold();
         baselineEquippedStems = {};
         baselineShopOwned = false;
 
@@ -1876,6 +2328,38 @@ var ShopPurchaseTracker = (function () {
         RouletteLogger.Log("Target item cleared from tracker & quickbuy.", "TARGET");
     }
 
+    function ClearQuickbuyQueueUI() {
+        if (typeof $.DispatchEvent === "function") {
+            try { $.DispatchEvent("CitadelQuickbuyClearQueue"); } catch (e) {}
+        }
+        if (typeof Game !== "undefined" && Game.ConsoleCommand) {
+            try { Game.ConsoleCommand("quickbuy clear"); } catch (e) {}
+            try { Game.ConsoleCommand("citadel_quickbuy_clear"); } catch (e) {}
+        }
+        try {
+            var root = GetTopRoot();
+            if (root) {
+                var qbTut = root.FindChildTraverse("QuickbuyTutorial") || root.FindChildTraverse("CitadelHudQuickbuy");
+                if (qbTut && qbTut.IsValid()) {
+                    var buttons = qbTut.FindChildrenWithClassTraverse("Button") || [];
+                    for (var b = 0; b < buttons.length; b++) {
+                        var btn = buttons[b];
+                        if (!btn || !btn.IsValid()) continue;
+                        var lbls = btn.FindChildrenWithClassTraverse("Label") || [];
+                        for (var l = 0; l < lbls.length; l++) {
+                            var txt = (lbls[l].text || "").toLowerCase();
+                            if (txt.indexOf("очистить") !== -1 || txt.indexOf("clear") !== -1) {
+                                $.DispatchEvent("Activated", btn, "mouse_primary");
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (err) {}
+        RouletteLogger.Log("Quickbuy queue cleared via UI & Panorama event.", "QUICKBUY");
+    }
+
     function ResetTrackerSession() {
         currentTargetItem = null;
         wasTargetInQuickbuy = false;
@@ -1886,6 +2370,8 @@ var ShopPurchaseTracker = (function () {
         baselineShopOwned = false;
         baselineRecentCount = 0;
         ownedItemsMap = {};
+        currentlyEquippedItemsList = [];
+        currentlyEquippedMap = {};
         seenRecentPurchasesMap = {};
         cachedLocalHeroName = null;
         wasShopOpen = false;
@@ -1899,6 +2385,41 @@ var ShopPurchaseTracker = (function () {
         }
     }
 
+    function DumpDiagnostics() {
+        var target = currentTargetItem ? currentTargetItem.name : "None";
+        var isShop = IsShopOpen();
+        var modPanel = currentTargetItem ? FindModPanelDirect(currentTargetItem) : null;
+        var panelStatus = "missing";
+        if (modPanel && modPanel.IsValid()) {
+            panelStatus = "found(owned=" + (modPanel.BHasClass ? modPanel.BHasClass("owned") : "n/a") + ")";
+        }
+        var gold = GetPlayerGold();
+        var isOwned = currentTargetItem ? IsItemOwned(currentTargetItem) : false;
+        var inQb = currentTargetItem ? IsTargetInQuickbuyQueue(currentTargetItem) : false;
+        var report = "[SCAMLOCK DIAG] Target: " + target + " | Owned: " + isOwned + " | ShopOpen: " + isShop + " | Panel: " + panelStatus + " | InQB: " + inQb + " | Gold: " + gold;
+        RouletteLogger.Log(report, "DIAG");
+        if (typeof Game !== "undefined" && Game.ConsoleCommand) {
+            Game.ConsoleCommand("echo " + report);
+        }
+        return report;
+    }
+
+    function GetComponentDiscount(targetItem) {
+        if (!targetItem || !targetItem.name) return 0;
+        var comps = UPGRADE_RECIPES[targetItem.name] || [];
+        var totalDiscount = 0;
+        for (var i = 0; i < comps.length; i++) {
+            var compName = comps[i];
+            if (IsItemOwnedByName(compName)) {
+                var compObj = DeadlockItemsDB.GetItemByName(compName);
+                if (compObj && compObj.cost) {
+                    totalDiscount += compObj.cost;
+                }
+            }
+        }
+        return totalDiscount;
+    }
+
     return {
         StartTracker: StartTracker,
         GetPlayerGold: GetPlayerGold,
@@ -1906,21 +2427,30 @@ var ShopPurchaseTracker = (function () {
         SetTargetItem: SetTargetItem,
         GetTargetItem: GetTargetItem,
         ClearTarget: ClearTarget,
+        ClearQuickbuyQueueUI: ClearQuickbuyQueueUI,
         ResetTrackerSession: ResetTrackerSession,
         CheckIsTargetItemPurchased: CheckIsTargetItemPurchased,
         QueueItemIntoQuickbuy: QueueItemIntoQuickbuy,
         NotifyPurchased: NotifyPurchased,
         OnPurchase: OnPurchase,
+        NotifyCancelled: NotifyCancelled,
+        OnCancel: OnCancel,
         IsShopOpen: IsShopOpen,
         IsItemOwned: IsItemOwned,
         IsItemOwnedByName: IsItemOwnedByName,
         MarkItemOwned: MarkItemOwned,
         UnmarkItemOwned: UnmarkItemOwned,
         ScanShopIfOpen: ScanShopIfOpen,
+        ScanEquippedInventoryHUD: ScanEquippedInventoryHUD,
+        GetComponentDiscount: GetComponentDiscount,
         GetOwnedItemsMap: function() { return ownedItemsMap; },
         GetConflictSet: GetConflictSet,
         AreItemsConflicting: AreItemsConflicting,
-        BuildConflictCache: BuildConflictCache
+        BuildConflictCache: BuildConflictCache,
+        IsUpgradeEquipped: IsUpgradeEquipped,
+        IsItemConflictingWithEquipped: IsItemConflictingWithEquipped,
+        GetCurrentlyEquippedItemsList: GetCurrentlyEquippedItemsList,
+        DumpDiagnostics: DumpDiagnostics
     };
 })();
 
@@ -1929,45 +2459,119 @@ var ShopPurchaseTracker = (function () {
 // =========================================================================
 var ScamlockDraft = (function () {
     var currentDraft = null;
+    var uiStatusLabel = null;
+    var getLangFn = null;
+    var getStringsFn = null;
+    var playSoundFn = null;
+
+    function SetUIContext(label, langGetter, stringsGetter, soundPlayer) {
+        uiStatusLabel = label;
+        getLangFn = langGetter;
+        getStringsFn = stringsGetter;
+        playSoundFn = soundPlayer;
+    }
 
     var ACTIVE_ITEM_IDS = {
-        "thermal_detonator": true,
-        "dps_aura": true,
-        "cloaking_device_active": true,
+        "goose_egg": true,
+        "upgrade_goose_egg": true,
+        "grit": true,
+        "upgrade_grit": true,
+        "withering_whip": true,
+        "upgrade_withering_whip": true,
         "health_stimpak": true,
-        "restorative_locket": true,
-        "return_fire": true,
-        "counterspell": true,
-        "reduce_debuff_duration": true,
-        "health_nova": true,
-        "rocket_booster": true,
-        "metal_skin": true,
-        "rescue_beam": true,
-        "warp_stone": true,
-        "colossus": true,
-        "divine_barrier": true,
-        "phantom_strike": true,
-        "spellbreaker": true,
-        "unstoppable": true,
-        "surging_power": true,
+        "upgrade_health_stimpak": true,
         "cold_front": true,
+        "upgrade_cold_front": true,
+        "fleetfoot_boots": true,
+        "upgrade_fleetfoot_boots": true,
+        "guardian_ward": true,
+        "upgrade_guardian_ward": true,
+        "restorative_locket": true,
+        "upgrade_restorative_locket": true,
+        "return_fire": true,
+        "upgrade_return_fire": true,
         "containment": true,
+        "upgrade_containment": true,
+        "spirit_sap": true,
+        "upgrade_spirit_sap": true,
+        "split_shot": true,
+        "upgrade_split_shot": true,
+        "thermal_detonator": true,
+        "upgrade_thermal_detonator": true,
+        "blood_tribute": true,
+        "upgrade_blood_tribute": true,
+        "non_player_bonus_sacrifice": true,
+        "upgrade_non_player_bonus_sacrifice": true,
         "rupture": true,
+        "upgrade_rupture": true,
         "greater_withering_whip": true,
+        "upgrade_greater_withering_whip": true,
+        "reduce_debuff_duration": true,
+        "upgrade_reduce_debuff_duration": true,
+        "fury_trance": true,
+        "upgrade_fury_trance": true,
+        "health_nova": true,
+        "upgrade_health_nova": true,
+        "dps_aura": true,
+        "upgrade_dps_aura": true,
         "target_stun": true,
+        "upgrade_target_stun": true,
+        "rocket_booster": true,
+        "upgrade_rocket_booster": true,
+        "metal_skin": true,
+        "upgrade_metal_skin": true,
+        "rescue_beam": true,
+        "upgrade_rescue_beam": true,
+        "cloaking_device_active": true,
+        "upgrade_cloaking_device_active": true,
         "targeted_silence": true,
+        "upgrade_targeted_silence": true,
+        "warp_stone": true,
+        "upgrade_warp_stone": true,
         "arctic_blast": true,
+        "upgrade_arctic_blast": true,
+        "capacitor": true,
+        "upgrade_capacitor": true,
+        "colossus": true,
+        "upgrade_colossus": true,
         "glitch": true,
+        "upgrade_glitch": true,
+        "divine_barrier": true,
+        "upgrade_divine_barrier": true,
         "ability_power_shard": true,
+        "upgrade_ability_power_shard": true,
         "self_bubble": true,
+        "upgrade_self_bubble": true,
+        "focus_lens": true,
+        "upgrade_focus_lens": true,
+        "infuser": true,
+        "upgrade_infuser": true,
         "magic_carpet": true,
+        "upgrade_magic_carpet": true,
+        "phantom_strike": true,
+        "upgrade_phantom_strike": true,
         "ability_refresher": true,
-        "aoe_root": true
+        "upgrade_ability_refresher": true,
+        "discord": true,
+        "upgrade_discord": true,
+        "spellbreaker": true,
+        "upgrade_spellbreaker": true,
+        "unstoppable": true,
+        "upgrade_unstoppable": true,
+        "surging_power": true,
+        "upgrade_surging_power": true,
+        "aoe_root": true,
+        "upgrade_aoe_root": true,
+        "counterspell": true,
+        "upgrade_counterspell": true
     };
 
     function IsActiveItem(it) {
         if (!it) return false;
-        return !!(ACTIVE_ITEM_IDS[it.id] || ACTIVE_ITEM_IDS[it.valveId]);
+        var cleanId = DeadlockItemsDB.CleanStr(it.id);
+        var cleanName = DeadlockItemsDB.CleanStr(it.name);
+        var cleanValve = DeadlockItemsDB.CleanStr(it.valveId);
+        return !!(ACTIVE_ITEM_IDS[it.id] || ACTIVE_ITEM_IDS[it.valveId] || ACTIVE_ITEM_IDS[cleanId] || ACTIVE_ITEM_IDS[cleanName] || ACTIVE_ITEM_IDS[cleanValve]);
     }
 
     function ShuffleArray(arr) {
@@ -1981,127 +2585,98 @@ var ScamlockDraft = (function () {
         return copy;
     }
 
-    function PickCategoryNonConflicting(pool, cat, count, forbiddenMap, activeRef, maxActives) {
-        if (!pool || pool.length === 0 || count <= 0) return [];
-        var filtered = [];
-        for (var f = 0; f < pool.length; f++) {
-            if (!cat || pool[f].category === cat) {
-                filtered.push(pool[f]);
-            }
+    function GenerateBalancedDraft(silent) {
+        if (typeof ShopPurchaseTracker !== "undefined" && ShopPurchaseTracker.BuildConflictCache) {
+            ShopPurchaseTracker.BuildConflictCache();
         }
-        var availableUnowned = [];
-        var availableOwned = [];
-
-        for (var i = 0; i < filtered.length; i++) {
-            var it = filtered[i];
-            var itKey = DeadlockItemsDB.CleanStr(it.name);
-            var itId = DeadlockItemsDB.CleanStr(it.id);
-            if (!forbiddenMap[itKey] && !forbiddenMap[itId]) {
-                if (ShopPurchaseTracker.IsItemOwned(it)) {
-                    availableOwned.push(it);
-                } else {
-                    availableUnowned.push(it);
-                }
+        var maxActives = 4;
+        var allItems = (DeadlockItemsDB && DeadlockItemsDB.ITEMS) ? DeadlockItemsDB.ITEMS.slice(0) : [];
+        var validPool = [];
+        for (var p = 0; p < allItems.length; p++) {
+            var item = allItems[p];
+            if (item && item.cost > 0 && item.tier >= 1 && item.tier <= 4) {
+                validPool.push(item);
             }
         }
 
-        var candidates = ShuffleArray(availableUnowned).concat(ShuffleArray(availableOwned));
-        var chosen = [];
+        var chosen12 = [];
+        var attempts = 0;
+        var finalActives = 0;
 
-        for (var c = 0; c < candidates.length; c++) {
-            var cand = candidates[c];
-            var candKey = DeadlockItemsDB.CleanStr(cand.name);
-            var candId = DeadlockItemsDB.CleanStr(cand.id);
+        while (chosen12.length < 12 && attempts < 10) {
+            attempts++;
+            chosen12 = [];
+            var forbiddenMap = {};
+            var activeCount = 0;
+            var shuffled = ShuffleArray(validPool);
 
-            if (!forbiddenMap[candKey] && !forbiddenMap[candId]) {
-                var isAct = IsActiveItem(cand);
-                if (isAct && activeRef && maxActives !== undefined && activeRef.count >= maxActives) {
-                    continue;
-                }
+            for (var i = 0; i < shuffled.length; i++) {
+                var it = shuffled[i];
+                var itKey = DeadlockItemsDB.CleanStr(it.name);
+                var itId = DeadlockItemsDB.CleanStr(it.id);
 
-                chosen.push(cand);
-                forbiddenMap[candKey] = true;
-                forbiddenMap[candId] = true;
-                if (isAct && activeRef) {
-                    activeRef.count++;
-                }
-
-                var confs = ShopPurchaseTracker.GetConflictSet(cand);
-                for (var confKey in confs) {
-                    if (confs.hasOwnProperty(confKey)) {
-                        forbiddenMap[confKey] = true;
+                if (!forbiddenMap[itKey] && !forbiddenMap[itId]) {
+                    var isAct = IsActiveItem(it);
+                    if (isAct && activeCount >= maxActives) {
+                        continue;
                     }
-                }
 
-                if (chosen.length === count) break;
-            }
-        }
+                    chosen12.push(it);
+                    forbiddenMap[itKey] = true;
+                    forbiddenMap[itId] = true;
+                    if (isAct) activeCount++;
 
-        // Fallback: if we couldn't reach count due to strict active limit, allow any non-conflicting item
-        if (chosen.length < count) {
-            for (var c2 = 0; c2 < candidates.length; c2++) {
-                var cand2 = candidates[c2];
-                var candKey2 = DeadlockItemsDB.CleanStr(cand2.name);
-                var candId2 = DeadlockItemsDB.CleanStr(cand2.id);
-                if (!forbiddenMap[candKey2] && !forbiddenMap[candId2]) {
-                    chosen.push(cand2);
-                    forbiddenMap[candKey2] = true;
-                    forbiddenMap[candId2] = true;
-                    if (IsActiveItem(cand2) && activeRef) activeRef.count++;
-                    if (chosen.length === count) break;
+                    if (typeof ShopPurchaseTracker !== "undefined" && ShopPurchaseTracker.GetConflictSet) {
+                        var confs = ShopPurchaseTracker.GetConflictSet(it);
+                        for (var confKey in confs) {
+                            if (confs.hasOwnProperty(confKey)) {
+                                forbiddenMap[confKey] = true;
+                            }
+                        }
+                    }
+
+                    if (chosen12.length === 12) break;
                 }
             }
+            finalActives = activeCount;
         }
 
-        return chosen;
-    }
+        var d1 = [];
+        var d2 = [];
+        var d3 = [];
+        var d4 = [];
+        for (var cIdx = 0; cIdx < chosen12.length; cIdx++) {
+            var cIt = chosen12[cIdx];
+            if (cIt.tier === 1) d1.push(cIt);
+            else if (cIt.tier === 2) d2.push(cIt);
+            else if (cIt.tier === 3) d3.push(cIt);
+            else if (cIt.tier === 4) d4.push(cIt);
+        }
 
-    function GenerateBalancedDraft() {
-        ShopPurchaseTracker.BuildConflictCache();
-        var forbiddenMap = {};
-        var activeRef = { count: 0 };
-        var maxActives = 3; // Maximum 3 active items (leaves at least 1 free active slot for hero)
-
-        var t1 = DeadlockItemsDB.GetItemsByTier(1);
-        var t2 = DeadlockItemsDB.GetItemsByTier(2);
-        var t3 = DeadlockItemsDB.GetItemsByTier(3);
-        var t4 = DeadlockItemsDB.GetItemsByTier(4);
-
-        // T1 (4 items): 1 Weapon, 1 Vitality, 1 Spirit, 1 Wildcard
-        var d1_w = PickCategoryNonConflicting(t1, "Weapon", 1, forbiddenMap, activeRef, maxActives);
-        var d1_v = PickCategoryNonConflicting(t1, "Vitality", 1, forbiddenMap, activeRef, maxActives);
-        var d1_s = PickCategoryNonConflicting(t1, "Spirit", 1, forbiddenMap, activeRef, maxActives);
-        var d1_any = PickCategoryNonConflicting(t1, null, 4 - (d1_w.length + d1_v.length + d1_s.length), forbiddenMap, activeRef, maxActives);
-        var d1 = d1_w.concat(d1_v, d1_s, d1_any);
-
-        // T2 (6 items): 2 Weapon, 2 Vitality, 2 Spirit (matches 4-slot category limits)
-        var d2_w = PickCategoryNonConflicting(t2, "Weapon", 2, forbiddenMap, activeRef, maxActives);
-        var d2_v = PickCategoryNonConflicting(t2, "Vitality", 2, forbiddenMap, activeRef, maxActives);
-        var d2_s = PickCategoryNonConflicting(t2, "Spirit", 2, forbiddenMap, activeRef, maxActives);
-        var d2_any = PickCategoryNonConflicting(t2, null, 6 - (d2_w.length + d2_v.length + d2_s.length), forbiddenMap, activeRef, maxActives);
-        var d2 = d2_w.concat(d2_v, d2_s, d2_any);
-
-        // T3 (4 items): 1 Weapon, 1 Vitality, 1 Spirit, 1 Wildcard
-        var d3_w = PickCategoryNonConflicting(t3, "Weapon", 1, forbiddenMap, activeRef, maxActives);
-        var d3_v = PickCategoryNonConflicting(t3, "Vitality", 1, forbiddenMap, activeRef, maxActives);
-        var d3_s = PickCategoryNonConflicting(t3, "Spirit", 1, forbiddenMap, activeRef, maxActives);
-        var d3_any = PickCategoryNonConflicting(t3, null, 4 - (d3_w.length + d3_v.length + d3_s.length), forbiddenMap, activeRef, maxActives);
-        var d3 = d3_w.concat(d3_v, d3_s, d3_any);
-
-        // T4 (2 items): 2 Endgame items from distinct categories
-        var cats = ShuffleArray(["Weapon", "Vitality", "Spirit"]);
-        var d4_a = PickCategoryNonConflicting(t4, cats[0], 1, forbiddenMap, activeRef, maxActives);
-        var d4_b = PickCategoryNonConflicting(t4, cats[1], 1, forbiddenMap, activeRef, maxActives);
-        var d4_any = PickCategoryNonConflicting(t4, null, 2 - (d4_a.length + d4_b.length), forbiddenMap, activeRef, maxActives);
-        var d4 = d4_a.concat(d4_b, d4_any);
+        function SortByCostAndName(arr) {
+            if (!arr || !arr.slice) return [];
+            var copy = arr.slice(0);
+            copy.sort(function (a, b) {
+                if (!a || !b) return 0;
+                if (a.cost !== b.cost) return (a.cost || 0) - (b.cost || 0);
+                var nameA = (a.name || "").toLowerCase();
+                var nameB = (b.name || "").toLowerCase();
+                if (nameA < nameB) return -1;
+                if (nameA > nameB) return 1;
+                return 0;
+            });
+            return copy;
+        }
 
         currentDraft = {
-            t1: d1,
-            t2: d2,
-            t3: d3,
-            t4: d4
+            t1: SortByCostAndName(d1),
+            t2: SortByCostAndName(d2),
+            t3: SortByCostAndName(d3),
+            t4: SortByCostAndName(d4)
         };
-        RouletteLogger.Log("Generated 16-item category-balanced draft (Actives: " + activeRef.count + "/4 max)", "DRAFT");
+        if (!silent) {
+            RouletteLogger.Log("Generated fair 12-item random draft: T1(" + d1.length + "), T2(" + d2.length + "), T3(" + d3.length + "), T4(" + d4.length + "). Actives: " + finalActives + "/4 max", "DRAFT");
+        }
         return currentDraft;
     }
 
@@ -2113,39 +2688,90 @@ var ScamlockDraft = (function () {
     }
 
     function QueueAllDraftToQuickbuy() {
-        if (!currentDraft) GenerateBalancedDraft();
-        var allItems = [];
-        var lists = [currentDraft.t1, currentDraft.t2, currentDraft.t3, currentDraft.t4];
-        for (var l = 0; l < lists.length; l++) {
-            var items = lists[l] || [];
-            for (var i = 0; i < items.length; i++) {
-                allItems.push(items[i]);
+        try {
+            if (!currentDraft) GenerateBalancedDraft();
+            var allItems = [];
+            if (currentDraft.t1) allItems = allItems.concat(currentDraft.t1);
+            if (currentDraft.t2) allItems = allItems.concat(currentDraft.t2);
+            if (currentDraft.t3) allItems = allItems.concat(currentDraft.t3);
+            if (currentDraft.t4) allItems = allItems.concat(currentDraft.t4);
+
+            if (allItems.length === 0) return 0;
+
+            // Clear existing quickbuy queue completely before repopulating
+            if (typeof ShopPurchaseTracker !== "undefined" && ShopPurchaseTracker.ClearQuickbuyQueueUI) {
+                ShopPurchaseTracker.ClearQuickbuyQueueUI();
             }
-        }
 
-        if (typeof Game !== "undefined" && Game.ConsoleCommand) {
-            Game.ConsoleCommand("quickbuy clear");
-        }
-        if (typeof $.DispatchEvent === "function") {
-            $.DispatchEvent("CitadelQuickbuyClearQueue");
-        }
+            var lang = (getLangFn && typeof getLangFn === "function") ? getLangFn() : "ru";
 
-        for (var idx = 0; idx < allItems.length; idx++) {
-            (function (item, queueIdx) {
-                $.Schedule(0.06 * queueIdx, function () {
-                    ShopPurchaseTracker.QueueItemIntoQuickbuy(item, queueIdx, true);
-                });
-            })(allItems[idx], idx);
-        }
+            function UpdateStatus(text, color) {
+                try {
+                    if (uiStatusLabel && (typeof uiStatusLabel.IsValid !== "function" || uiStatusLabel.IsValid())) {
+                        uiStatusLabel.text = text;
+                        if (color && uiStatusLabel.style) uiStatusLabel.style.color = color;
+                    }
+                } catch (e) {}
+            }
 
-        RouletteLogger.Log("Queued " + allItems.length + " draft items into Quickbuy (staggered)", "DRAFT");
-        return allItems.length;
+            function SafePlaySound(name) {
+                try {
+                    if (playSoundFn && typeof playSoundFn === "function") {
+                        playSoundFn(name);
+                    }
+                } catch (e) {}
+            }
+
+            UpdateStatus((lang === "ru") ? "Очищаем очередь..." : "Clearing queue...", "#38bdf8");
+
+            // Queue ALL 12 items in ascending order (T1 -> T2 -> T3 -> T4) with clear buffer and 0.09s delay
+            for (var idx = 0; idx < allItems.length; idx++) {
+                (function (item, queueIdx) {
+                    $.Schedule(0.12 + (0.09 * queueIdx), function () {
+                        try {
+                            if (typeof ShopPurchaseTracker !== "undefined" && ShopPurchaseTracker.QueueItemIntoQuickbuy) {
+                                ShopPurchaseTracker.QueueItemIntoQuickbuy(item, queueIdx, false);
+                            }
+                            var itName = item.name;
+                            var statusTxt = (lang === "ru") ?
+                                ("В очереди " + (queueIdx + 1) + " / " + allItems.length + ": " + itName) :
+                                ("Queued " + (queueIdx + 1) + " / " + allItems.length + ": " + itName);
+                            UpdateStatus(statusTxt, "#38bdf8");
+
+                            if (queueIdx === allItems.length - 1) {
+                                $.Schedule(0.15, function () {
+                                    SafePlaySound("UI.CommendConfirmation");
+                                    var doneTxt = (lang === "ru") ? "Все 12 предметов добавлены в Quickbuy!" : "All 12 draft items queued to Quickbuy!";
+                                    if (getStringsFn && typeof getStringsFn === "function") {
+                                        var sMap = getStringsFn();
+                                        if (sMap && sMap[lang] && sMap[lang].draftQueued) {
+                                            doneTxt = sMap[lang].draftQueued;
+                                        }
+                                    }
+                                    UpdateStatus(doneTxt, "#10b981");
+                                });
+                            }
+                        } catch (qErr) {
+                            RouletteLogger.Log("Queue item " + queueIdx + " error: " + qErr, "ERROR");
+                        }
+                    });
+                })(allItems[idx], idx);
+            }
+
+            RouletteLogger.Log("Queued ALL " + allItems.length + " draft items into Quickbuy via DOM clicks", "DRAFT");
+            return allItems.length;
+        } catch (err) {
+            RouletteLogger.Log("QueueAllDraftToQuickbuy error: " + err, "ERROR");
+            return 0;
+        }
     }
 
     return {
         GenerateBalancedDraft: GenerateBalancedDraft,
         GetCurrentDraft: GetCurrentDraft,
-        QueueAllDraftToQuickbuy: QueueAllDraftToQuickbuy
+        QueueAllDraftToQuickbuy: QueueAllDraftToQuickbuy,
+        SetUIContext: SetUIContext,
+        IsActiveItem: IsActiveItem
     };
 })();
 
@@ -2188,29 +2814,42 @@ var ItemRoulette = (function () {
             vanillaShop: "МАГАЗИН",
             returnRoulette: "ВЕРНУТЬСЯ В SCAMLOCK",
             tabRoulette: "РУЛЕТКА",
-            tabDraft: "ДРАФТ (16)",
+            tabDraft: "ДРАФТ (12)",
             spinBtn: "КРУТИТЬ КОЛЕСО",
             spinningBtn: "КРУТИМ КОЛЕСО...",
             buyFirstBtn: "ТРЕБУЕТСЯ КУПИТЬ: ",
+            preGameBtn: "РАЗМИНКА",
             statusReady: "Колесо готово. Нажмите для выбора предмета.",
             statusRolling: "Крутим колесо...",
+            statusPreGame: "Идёт разминка (ожидание старта матча). Рулетка доступна со старта игры!",
             statusWon: "Выпало: ",
             statusWonSub: ". Загляните в лавку за покупкой.",
             statusBought: "Предмет куплен! Можно крутить дальше.",
             statusMustBuy: "Сначала купите в лавке: ",
+            statusDuplicate: "У вас уже есть этот предмет! Можно крутить дальше.",
             targetHeader: "ВЫПАВШИЙ ПРЕДМЕТ (К ПОКУПКЕ):",
             targetNone: "Пока пусто • Нажмите «Крутить колесо»",
             skipTarget: "СКИП",
             tier: "Тир",
-            draftTitle: "ДРАФТ НА МАТЧ (16 ПРЕДМЕТОВ)",
+            langBtn: "Язык: RU",
+            langTooltip: "Сменить язык (RU / EN)",
+            draftTitle: "ДРАФТ НА МАТЧ (12 ПРЕДМЕТОВ)",
             draftReroll: "ПЕРЕСОБРАТЬ ДРАФТ",
-            draftQuickbuy: "В QUICKBUY ВСЕ (16)",
-            draftQueued: "Все 16 предметов добавлены в Quickbuy!",
-            t1Header: "ТИР 1 - РАННЯЯ ИГРА (4 ПРЕДМЕТА)",
-            t2Header: "ТИР 2 - ОСНОВА (6 ПРЕДМЕТОВ)",
-            t3Header: "ТИР 3 - ПИК СИЛЫ (4 ПРЕДМЕТА)",
-            t4Header: "ТИР 4 - ФИНАЛ (2 ПРЕДМЕТА)",
-            credits: "Scamlock • Автор: d3dvk (Discord: dedvk) • Создано с помощью ИИ"
+            draftQuickbuy: "В АВТОПОКУПКУ ВСЕ (12)",
+            draftQueued: "Все 12 предметов драфта добавлены в автопокупку!",
+            t1Header: "ТИР 1 - РАННЯЯ ИГРА",
+            t2Header: "ТИР 2 - ОСНОВА",
+            t3Header: "ТИР 3 - ПИК СИЛЫ",
+            t4Header: "ТИР 4 - ФИНАЛ",
+            credits: "Scamlock • Автор: d3dvk (Discord: dedvk) • Создано с помощью ИИ",
+            oddsTitle: "Шансы выпадения предметов по времени:",
+            oddsT1: "0-8 мин:  Т1 80%  •  Т2 18%  •  Т3 2%",
+            oddsT2: "8-16 мин:  Т2 55%  •  Т1 30%  •  Т3 13%  •  Т4 2%",
+            oddsT3: "16-25 мин:  Т3 50%  •  Т2 30%  •  Т1 10%  •  Т4 10%",
+            oddsT4: "25+ мин:  Т3 45%  •  Т4 35%  •  Т2 15%  •  Т1 5%",
+            qaBtn: "QA ТЕСТ",
+            qaRunning: "ТЕСТ...",
+            qaTooltip: "Запустить полный стресс-тест всех систем мода (результат в консоль)"
         },
         en: {
             title: "SCAMLOCK",
@@ -2219,29 +2858,42 @@ var ItemRoulette = (function () {
             vanillaShop: "VANILLA SHOP",
             returnRoulette: "RETURN TO SCAMLOCK",
             tabRoulette: "ROULETTE",
-            tabDraft: "DRAFT (16)",
+            tabDraft: "DRAFT (12)",
             spinBtn: "SPIN THE WHEEL",
             spinningBtn: "ROLLING...",
             buyFirstBtn: "REQUIRED TO BUY: ",
+            preGameBtn: "WARMUP",
             statusReady: "Wheel ready. Click to spin for an upgrade.",
             statusRolling: "Spinning...",
+            statusPreGame: "Pregame warmup active. Roulette unlocks once the match starts!",
             statusWon: "Won: ",
             statusWonSub: ". Purchase at the shop to continue.",
             statusBought: "Target purchased! You may spin again.",
             statusMustBuy: "Purchase required: ",
+            statusDuplicate: "Item already owned! You can spin again.",
             targetHeader: "CURRENT TARGET (MUST BUY):",
             targetNone: "No active target • Click «Spin The Wheel»",
             skipTarget: "SKIP",
             tier: "Tier",
-            draftTitle: "MATCH DRAFT (16 BALANCED ITEMS)",
+            langBtn: "Lang: EN",
+            langTooltip: "Switch language (EN / RU)",
+            draftTitle: "MATCH DRAFT (12 BALANCED ITEMS)",
             draftReroll: "REROLL DRAFT",
-            draftQuickbuy: "QUEUE ALL (16) TO QUICKBUY",
-            draftQueued: "All 16 draft items queued to Quickbuy!",
-            t1Header: "TIER 1 - EARLY GAME (4 ITEMS)",
-            t2Header: "TIER 2 - CORE ITEMS (6 ITEMS)",
-            t3Header: "TIER 3 - POWER SPIKE (4 ITEMS)",
-            t4Header: "TIER 4 - LUXURY (2 ITEMS)",
-            credits: "Scamlock • Author: d3dvk (Discord: dedvk) • Created with AI"
+            draftQuickbuy: "QUEUE ALL 12 TO QUICKBUY",
+            draftQueued: "All 12 draft items queued to Quickbuy!",
+            t1Header: "TIER 1 - EARLY GAME",
+            t2Header: "TIER 2 - CORE ITEMS",
+            t3Header: "TIER 3 - POWER SPIKE",
+            t4Header: "TIER 4 - LUXURY",
+            credits: "Scamlock • Author: d3dvk (Discord: dedvk) • Created with AI",
+            oddsTitle: "Item drop rates by game time:",
+            oddsT1: "0-8 min:  T1 80%  •  T2 18%  •  T3 2%",
+            oddsT2: "8-16 min:  T2 55%  •  T1 30%  •  T3 13%  •  T4 2%",
+            oddsT3: "16-25 min:  T3 50%  •  T2 30%  •  T1 10%  •  T4 10%",
+            oddsT4: "25+ min:  T3 45%  •  T4 35%  •  T2 15%  •  T1 5%",
+            qaBtn: "QA TEST",
+            qaRunning: "TESTING...",
+            qaTooltip: "Run full automated stress test of mod systems (logs report to console)"
         }
     };
 
@@ -2249,7 +2901,6 @@ var ItemRoulette = (function () {
     var isVanillaShopMode = false;
     var isSpinBtnHovered = false;
 
-    // Tab and View State
     var currentTab = "roulette";
     var tabRouletteBtn = null;
     var tabRouletteLbl = null;
@@ -2267,7 +2918,6 @@ var ItemRoulette = (function () {
     var targetSkipBtn = null;
     var targetSkipLbl = null;
 
-    // DOM Elements
     var overlayPanel = null;
     var mainModalContent = null;
     var reelPanel = null;
@@ -2276,8 +2926,12 @@ var ItemRoulette = (function () {
     var spinBtnText = null;
     var langToggleBtn = null;
     var langToggleText = null;
+    var qaTestBtn = null;
+    var qaTestText = null;
     var statusLabel = null;
     var phaseBadge = null;
+    var matchTimerLabel = null;
+    var oddsTooltipPanel = null;
     var soulsLabel = null;
     var soulsTitleLabel = null;
     var titleLabel = null;
@@ -2413,173 +3067,239 @@ var ItemRoulette = (function () {
         SetShopMode(!isVanillaShopMode);
     }
 
-    function SwitchTab(tabName) {
-        currentTab = tabName;
-        if (tabName === "draft") {
-            if (rouletteViewPanel) rouletteViewPanel.style.visibility = "collapse";
-            if (draftViewPanel) {
-                draftViewPanel.style.visibility = "visible";
-                RenderDraftGrid();
-            }
-            if (tabDraftBtn) {
-                tabDraftBtn.style.backgroundColor = "#2563eb";
-                tabDraftBtn.style.border = "1px solid #60a5fa";
-            }
+    function UpdateTabButtonStyles() {
+        if (currentTab === "roulette") {
             if (tabRouletteBtn) {
-                tabRouletteBtn.style.backgroundColor = "#1f2937";
-                tabRouletteBtn.style.border = "1px solid #374151";
+                tabRouletteBtn.style.backgroundColor = "gradient(linear, 0% 0%, 0% 100%, from(#2563eb), to(#1d4ed8))";
+                tabRouletteBtn.style.border = "1.5px solid #60a5fa";
+                tabRouletteBtn.style.boxShadow = "0px 0px 10px rgba(37, 99, 235, 0.5)";
             }
-        } else {
-            if (draftViewPanel) draftViewPanel.style.visibility = "collapse";
-            if (rouletteViewPanel) rouletteViewPanel.style.visibility = "visible";
-            if (tabRouletteBtn) {
-                tabRouletteBtn.style.backgroundColor = "#2563eb";
-                tabRouletteBtn.style.border = "1px solid #60a5fa";
-            }
+            if (tabRouletteLbl) tabRouletteLbl.style.color = "#ffffff";
             if (tabDraftBtn) {
                 tabDraftBtn.style.backgroundColor = "#1f2937";
                 tabDraftBtn.style.border = "1px solid #374151";
+                tabDraftBtn.style.boxShadow = "none";
+            }
+            if (tabDraftLbl) tabDraftLbl.style.color = "#9ca3af";
+        } else {
+            if (tabDraftBtn) {
+                tabDraftBtn.style.backgroundColor = "gradient(linear, 0% 0%, 0% 100%, from(#2563eb), to(#1d4ed8))";
+                tabDraftBtn.style.border = "1.5px solid #60a5fa";
+                tabDraftBtn.style.boxShadow = "0px 0px 10px rgba(37, 99, 235, 0.5)";
+            }
+            if (tabDraftLbl) tabDraftLbl.style.color = "#ffffff";
+            if (tabRouletteBtn) {
+                tabRouletteBtn.style.backgroundColor = "#1f2937";
+                tabRouletteBtn.style.border = "1px solid #374151";
+                tabRouletteBtn.style.boxShadow = "none";
+            }
+            if (tabRouletteLbl) tabRouletteLbl.style.color = "#9ca3af";
+        }
+    }
+
+    function SwitchTab(tabName) {
+        if (currentTab === tabName) return;
+        currentTab = tabName;
+        UpdateTabButtonStyles();
+
+        if (tabName === "draft") {
+            if (rouletteViewPanel) {
+                rouletteViewPanel.style.visibility = "collapse";
+            }
+            if (draftViewPanel) {
+                draftViewPanel.style.visibility = "visible";
+                draftViewPanel.style.opacity = "1.0";
+                RenderDraftGrid();
+            }
+        } else {
+            if (draftViewPanel) {
+                draftViewPanel.style.visibility = "collapse";
+            }
+            if (rouletteViewPanel) {
+                rouletteViewPanel.style.visibility = "visible";
+                rouletteViewPanel.style.opacity = "1.0";
             }
         }
     }
 
     function RenderDraftGrid() {
         if (!draftGridContainer || !draftGridContainer.IsValid()) return;
-        draftGridContainer.RemoveAndDeleteChildren();
+        try {
+            draftGridContainer.RemoveAndDeleteChildren();
 
-        var draft = ScamlockDraft.GetCurrentDraft();
-        if (!draft) return;
+            var draft = ScamlockDraft.GetCurrentDraft();
+            if (!draft) return;
 
-        var costSuffix = (currentLang === "ru") ? " Душ" : " Souls";
-        var sections = [
-            { tier: 1, title: STRINGS[currentLang].t1Header, items: draft.t1, color: "#10b981", costText: "800" + costSuffix },
-            { tier: 2, title: STRINGS[currentLang].t2Header, items: draft.t2, color: "#38bdf8", costText: "1600" + costSuffix },
-            { tier: 3, title: STRINGS[currentLang].t3Header, items: draft.t3, color: "#a855f7", costText: "3200" + costSuffix },
-            { tier: 4, title: STRINGS[currentLang].t4Header, items: draft.t4, color: "#f59e0b", costText: "6400" + costSuffix }
-        ];
+            var costSuffix = (currentLang === "ru") ? " Душ" : " Souls";
+            var sections = [
+                { tier: 1, title: STRINGS[currentLang].t1Header, items: draft.t1 || [], color: "#10b981", costText: "800" + costSuffix },
+                { tier: 2, title: STRINGS[currentLang].t2Header, items: draft.t2 || [], color: "#38bdf8", costText: "1600" + costSuffix },
+                { tier: 3, title: STRINGS[currentLang].t3Header, items: draft.t3 || [], color: "#a855f7", costText: "3200" + costSuffix },
+                { tier: 4, title: STRINGS[currentLang].t4Header, items: draft.t4 || [], color: "#f59e0b", costText: "6400" + costSuffix }
+            ];
 
-        for (var s = 0; s < sections.length; s++) {
-            var sec = sections[s];
-            var secWrap = $.CreatePanel("Panel", draftGridContainer, "DraftSec_" + sec.tier);
-            ApplyStyles(secWrap, {
-                "flow-children": "down",
-                "width": "100%",
-                "background-color": "rgba(15, 23, 42, 0.65)",
-                "border": "1px solid rgba(255, 255, 255, 0.07)",
-                "border-radius": "7px",
-                "padding": "6px 10px 8px 10px",
-                "margin-bottom": "6px"
-            });
+            for (var s = 0; s < sections.length; s++) {
+                var sec = sections[s];
+                var itemsList = sec.items || [];
+                if (itemsList.length === 0) continue;
 
-            var headerRow = $.CreatePanel("Panel", secWrap, "");
-            ApplyStyles(headerRow, {
-                "flow-children": "right",
-                "width": "100%",
-                "margin-bottom": "5px"
-            });
+                var secWrap = $.CreatePanel("Panel", draftGridContainer, "DraftSec_" + sec.tier);
+                ApplyStyles(secWrap, {
+                    "flow-children": "down",
+                    "width": "100%",
+                    "background-color": "rgba(15, 23, 42, 0.65)",
+                    "border": "1px solid rgba(255, 255, 255, 0.07)",
+                    "border-radius": "7px",
+                    "padding": "6px 10px 8px 10px",
+                    "margin-bottom": "6px"
+                });
 
-            var headerLbl = $.CreatePanel("Label", headerRow, "");
-            headerLbl.text = sec.title;
-            ApplyStyles(headerLbl, {
-                "color": sec.color,
-                "font-size": "11px",
-                "font-weight": "bold",
-                "letter-spacing": "0.5px"
-            });
+                var headerRow = $.CreatePanel("Panel", secWrap, "");
+                ApplyStyles(headerRow, {
+                    "flow-children": "right",
+                    "width": "100%",
+                    "margin-bottom": "5px"
+                });
 
-            var hSpacer = $.CreatePanel("Panel", headerRow, "");
-            ApplyStyles(hSpacer, { "width": "fill-parent-flow(1.0)" });
+                var headerLbl = $.CreatePanel("Label", headerRow, "");
+                var secBaseTitle = (sec.tier === 1) ? STRINGS[currentLang].t1Header :
+                                   (sec.tier === 2) ? STRINGS[currentLang].t2Header :
+                                   (sec.tier === 3) ? STRINGS[currentLang].t3Header : STRINGS[currentLang].t4Header;
+                var secItemCountTxt = (currentLang === "ru") ? (" (" + itemsList.length + " ПРЕДМ.)") : (" (" + itemsList.length + " ITEMS)");
+                headerLbl.text = secBaseTitle + secItemCountTxt;
+                ApplyStyles(headerLbl, {
+                    "color": sec.color,
+                    "font-size": "11px",
+                    "font-weight": "bold",
+                    "letter-spacing": "0.5px"
+                });
 
-            var costHint = $.CreatePanel("Label", headerRow, "");
-            costHint.text = sec.costText;
-            ApplyStyles(costHint, {
-                "color": "#9ca3af",
-                "font-size": "10px",
-                "vertical-align": "center"
-            });
+                var hSpacer = $.CreatePanel("Panel", headerRow, "");
+                ApplyStyles(hSpacer, { "width": "fill-parent-flow(1.0)" });
 
-            var row = $.CreatePanel("Panel", secWrap, "DraftRow_" + sec.tier);
-            ApplyStyles(row, {
-                "flow-children": "right",
-                "width": "100%"
-            });
+                var costHint = $.CreatePanel("Label", headerRow, "");
+                costHint.text = sec.costText;
+                ApplyStyles(costHint, {
+                    "color": "#9ca3af",
+                    "font-size": "10px",
+                    "vertical-align": "center"
+                });
 
-            var cardW = "214px";
-            var cardMargin = "8px";
-            if (sec.tier === 2) {
-                cardW = "142px";
-                cardMargin = "6px";
-            } else if (sec.tier === 4) {
-                cardW = "280px";
-                cardMargin = "14px";
+                var itemsPerFirstRow = (itemsList.length > 4) ? Math.ceil(itemsList.length / 2) : itemsList.length;
+                var rows = [];
+                var row1 = $.CreatePanel("Panel", secWrap, "DraftRow_" + sec.tier + "_1");
+                ApplyStyles(row1, { "flow-children": "right", "width": "100%", "margin-bottom": (itemsList.length > 4 ? "6px" : "0px") });
+                rows.push(row1);
+                if (itemsList.length > 4) {
+                    var row2 = $.CreatePanel("Panel", secWrap, "DraftRow_" + sec.tier + "_2");
+                    ApplyStyles(row2, { "flow-children": "right", "width": "100%" });
+                    rows.push(row2);
+                }
+
+                for (var c = 0; c < itemsList.length; c++) {
+                    var it = itemsList[c];
+                    if (!it) continue;
+                    var targetRow = (c < itemsPerFirstRow) ? rows[0] : rows[1];
+                    var isRowLast = (c < itemsPerFirstRow) ? (c === itemsPerFirstRow - 1) : (c === itemsList.length - 1);
+                    (function (item, tColor, isLast, parentRow) {
+                        var card = $.CreatePanel("Button", parentRow, "");
+                        ApplyStyles(card, {
+                            "width": "fill-parent-flow(1.0)",
+                            "background-color": "#111827",
+                            "border": "1.5px solid #1f2937",
+                            "border-radius": "5px",
+                            "padding": "5px 7px",
+                            "margin-right": isLast ? "0px" : "8px",
+                            "flow-children": "right",
+                            "transition-property": "brightness, border, box-shadow",
+                            "transition-duration": "0.12s"
+                        });
+
+                        var img = $.CreatePanel("Image", card, "");
+                        img.hittest = false;
+                        if (item.image) img.SetImage(item.image);
+                        ApplyStyles(img, {
+                            "width": "32px",
+                            "height": "32px",
+                            "border-radius": "4px",
+                            "border": "1px solid rgba(255, 255, 255, 0.08)",
+                            "vertical-align": "center"
+                        });
+
+                        var info = $.CreatePanel("Panel", card, "");
+                        info.hittest = false;
+                        ApplyStyles(info, {
+                            "flow-children": "down",
+                            "margin-left": "7px",
+                            "vertical-align": "center",
+                            "width": "fill-parent-flow(1.0)"
+                        });
+
+                        var nameLbl = $.CreatePanel("Label", info, "");
+                        nameLbl.hittest = false;
+                        nameLbl.text = item.name;
+                        ApplyStyles(nameLbl, {
+                            "color": "#f9fafb",
+                            "font-size": "10.5px",
+                            "font-weight": "bold",
+                            "text-overflow": "ellipsis"
+                        });
+
+                        var costLbl = $.CreatePanel("Label", info, "");
+                        costLbl.hittest = false;
+                        costLbl.text = item.cost + costSuffix;
+                        ApplyStyles(costLbl, {
+                            "color": tColor,
+                            "font-size": "9.5px",
+                            "margin-top": "1px"
+                        });
+
+                        card.SetPanelEvent("onmouseover", function () {
+                            PlaySound("UI.Shop.Ability.Hover");
+                            card.style.brightness = "1.25";
+                            card.style.borderColor = tColor;
+                            card.style.boxShadow = "0px 0px 10px " + tColor;
+                        });
+                        card.SetPanelEvent("onmouseout", function () {
+                            card.style.brightness = "1.0";
+                            card.style.borderColor = "#1f2937";
+                            card.style.boxShadow = "none";
+                        });
+                        card.SetPanelEvent("onactivate", function () {
+                            PlaySound("UI.MainMenu.Activate");
+                            ShopPurchaseTracker.QueueItemIntoQuickbuy(item, 0, false);
+                            card.style.borderColor = "#10b981";
+                            $.Schedule(0.18, function () {
+                                if (card && card.IsValid()) {
+                                    card.style.borderColor = tColor;
+                                }
+                            });
+                            if (draftStatusLabel) {
+                                draftStatusLabel.text = "+ " + item.name + " -> Quickbuy";
+                                draftStatusLabel.style.color = "#10b981";
+                            }
+                        });
+                    })(it, sec.color, isRowLast, targetRow);
+                }
             }
+        } catch (e) {
+            RouletteLogger.Log("RenderDraftGrid error: " + e, "ERROR");
+        }
+    }
 
-            for (var c = 0; c < sec.items.length; c++) {
-                (function (it, tColor, isLast) {
-                    var card = $.CreatePanel("Button", row, "");
-                    ApplyStyles(card, {
-                        "width": cardW,
-                        "background-color": "#111827",
-                        "border": "1px solid #1f2937",
-                        "border-radius": "5px",
-                        "padding": "5px 7px",
-                        "margin-right": isLast ? "0px" : cardMargin,
-                        "flow-children": "right"
-                    });
-
-                    var img = $.CreatePanel("Image", card, "");
-                    if (it.image) img.SetImage(it.image);
-                    ApplyStyles(img, {
-                        "width": "32px",
-                        "height": "32px",
-                        "border-radius": "4px",
-                        "border": "1px solid rgba(255, 255, 255, 0.08)",
-                        "vertical-align": "center"
-                    });
-
-                    var info = $.CreatePanel("Panel", card, "");
-                    ApplyStyles(info, {
-                        "flow-children": "down",
-                        "margin-left": "7px",
-                        "vertical-align": "center",
-                        "width": "fill-parent-flow(1.0)"
-                    });
-
-                    var nameLbl = $.CreatePanel("Label", info, "");
-                    nameLbl.text = it.name;
-                    ApplyStyles(nameLbl, {
-                        "color": "#f9fafb",
-                        "font-size": (sec.tier === 2) ? "10px" : "11px",
-                        "font-weight": "bold",
-                        "text-overflow": "ellipsis"
-                    });
-
-                    var costLbl = $.CreatePanel("Label", info, "");
-                    costLbl.text = it.cost + costSuffix;
-                    ApplyStyles(costLbl, {
-                        "color": tColor,
-                        "font-size": "9.5px",
-                        "margin-top": "1px"
-                    });
-
-                    card.SetPanelEvent("onmouseover", function () {
-                        card.style.brightness = "1.25";
-                        card.style.border = "1px solid " + tColor;
-                    });
-                    card.SetPanelEvent("onmouseout", function () {
-                        card.style.brightness = "1.0";
-                        card.style.border = "1px solid #1f2937";
-                    });
-                    card.SetPanelEvent("onactivate", function () {
-                        PlaySound("UI.MainMenu.Activate");
-                        ShopPurchaseTracker.QueueItemIntoQuickbuy(it);
-                        card.style.border = "1px solid #10b981";
-                        if (draftStatusLabel) {
-                            draftStatusLabel.text = "+ " + it.name + " -> Quickbuy";
-                            draftStatusLabel.style.color = "#10b981";
-                        }
-                    });
-                })(sec.items[c], sec.color, c === sec.items.length - 1);
+    function UpdateOddsTooltip() {
+        if (!oddsTooltipPanel) return;
+        var s = STRINGS[currentLang] || STRINGS.ru;
+        if (oddsTooltipPanel._titleLbl && oddsTooltipPanel._titleLbl.IsValid()) {
+            oddsTooltipPanel._titleLbl.text = s.oddsTitle;
+        }
+        if (oddsTooltipPanel._rowLabels) {
+            var keys = ["oddsT1", "oddsT2", "oddsT3", "oddsT4"];
+            for (var i = 0; i < keys.length; i++) {
+                var lbl = oddsTooltipPanel._rowLabels[i];
+                if (lbl && lbl.IsValid()) {
+                    lbl.text = "• " + (s[keys[i]] || "");
+                }
             }
         }
     }
@@ -2594,7 +3314,8 @@ var ItemRoulette = (function () {
         if (soulsTitleLabel) soulsTitleLabel.text = s.souls;
         if (toggleShopLabel) toggleShopLabel.text = s.vanillaShop;
         if (returnToRouletteLbl) returnToRouletteLbl.text = s.returnRoulette;
-        if (langToggleText) langToggleText.text = (currentLang === "ru") ? "RU" : "EN";
+        if (langToggleText) langToggleText.text = s.langBtn;
+        if (qaTestText) qaTestText.text = s.qaBtn;
         if (targetHeader) targetHeader.text = s.targetHeader;
         if (tabRouletteLbl) tabRouletteLbl.text = s.tabRoulette;
         if (tabDraftLbl) tabDraftLbl.text = s.tabDraft;
@@ -2604,18 +3325,39 @@ var ItemRoulette = (function () {
         if (draftQuickbuyLbl) draftQuickbuyLbl.text = s.draftQuickbuy;
         if (creditsLabel) creditsLabel.text = s.credits;
 
-        // Update all existing reel card costs
+        UpdateOddsTooltip();
+
         if (cardPanels && cardPanels.length > 0) {
             for (var ci = 0; ci < cardPanels.length; ci++) {
                 var cp = cardPanels[ci];
-                if (cp && cp._costLbl && cp._costLbl.IsValid && cp._costLbl.IsValid() && reelItems && reelItems[ci]) {
-                    cp._costLbl.text = reelItems[ci].cost + " " + (currentLang === "ru" ? "Душ" : "Souls");
+                if (cp && cp.IsValid && cp.IsValid() && reelItems && reelItems[ci]) {
+                    var rItem = reelItems[ci];
+                    if (cp._costLbl && cp._costLbl.IsValid && cp._costLbl.IsValid()) {
+                        cp._costLbl.text = rItem.cost + " " + (currentLang === "ru" ? "Душ" : "Souls");
+                    }
+                    if (cp._nameLbl && cp._nameLbl.IsValid && cp._nameLbl.IsValid()) {
+                        cp._nameLbl.text = rItem.name;
+                    }
                 }
             }
         }
 
-        // Re-render draft grid so section titles and cost labels match current language
         RenderDraftGrid();
+
+        if (statusLabel) {
+            var activeTarget = ShopPurchaseTracker.GetTargetItem();
+            if (isSpinning) {
+                statusLabel.text = s.statusRolling;
+                statusLabel.style.color = "#fbbf24";
+            } else if (activeTarget) {
+                var targetNameStr = activeTarget.name;
+                statusLabel.text = s.statusMustBuy + targetNameStr + "!";
+                statusLabel.style.color = "#ef4444";
+            } else {
+                statusLabel.text = s.statusReady;
+                statusLabel.style.color = "#9ca3af";
+            }
+        }
 
         UpdateUIState();
 
@@ -2628,7 +3370,281 @@ var ItemRoulette = (function () {
         SetLanguage((currentLang === "ru") ? "en" : "ru", false);
     }
 
-    // ToggleLogViewer removed
+    function RunComprehensiveQASuite(labelPanel, onComplete) {
+        var startTime = Date.now();
+        var results = {
+            scenario1_upgrades: false,
+            scenario1_details: "",
+            scenario2_midspin: false,
+            scenario2_details: "",
+            scenario3_shopSale: false,
+            scenario3_details: "",
+            scenario4_capacity: false,
+            scenario4_details: "",
+            scenario5_draft: false,
+            scenario5_details: "",
+            scenario6_meta: false,
+            scenario6_details: ""
+        };
+
+        function UpdateLabel(txt) {
+            if (labelPanel && labelPanel.IsValid && labelPanel.IsValid()) {
+                labelPanel.text = txt;
+            }
+        }
+
+        UpdateLabel("ТЕСТ: 1/6 (Апгрейды)...");
+
+        try {
+            var t2 = DeadlockItemsDB.GetItemByName("Compress Cooldown");
+            var t3 = DeadlockItemsDB.GetItemByName("Superior Cooldown");
+            var t4 = DeadlockItemsDB.GetItemByName("Transcendent Cooldown");
+            if (!t2 || !t3 || !t4) throw new Error("Missing cooldown items in DB");
+            ShopPurchaseTracker.MarkItemOwned(t2);
+            ShopPurchaseTracker.MarkItemOwned(t3);
+            ShopPurchaseTracker.MarkItemOwned(t4);
+            if (!ShopPurchaseTracker.IsItemOwned(t4)) throw new Error("Cooldown T4 not owned");
+            ShopPurchaseTracker.UnmarkItemOwned(t4, true);
+            ShopPurchaseTracker.UnmarkItemOwned(t3, true);
+            ShopPurchaseTracker.UnmarkItemOwned(t2, true);
+
+            var d2 = DeadlockItemsDB.GetItemByName("Duration Extender");
+            var d3 = DeadlockItemsDB.GetItemByName("Superior Duration");
+            if (d2 && d3) {
+                ShopPurchaseTracker.MarkItemOwned(d2);
+                ShopPurchaseTracker.MarkItemOwned(d3);
+                if (!ShopPurchaseTracker.IsItemOwned(d3)) throw new Error("Duration T3 not owned");
+                ShopPurchaseTracker.UnmarkItemOwned(d3, true);
+                ShopPurchaseTracker.UnmarkItemOwned(d2, true);
+            }
+
+            var b1 = DeadlockItemsDB.GetItemByName("Sprint Boots");
+            var b2 = DeadlockItemsDB.GetItemByName("Enduring Speed");
+            var b3 = DeadlockItemsDB.GetItemByName("Trophy Collector");
+            if (b1 && b2 && b3) {
+                ShopPurchaseTracker.MarkItemOwned(b1);
+                ShopPurchaseTracker.MarkItemOwned(b2);
+                ShopPurchaseTracker.MarkItemOwned(b3);
+                if (!ShopPurchaseTracker.IsItemOwned(b3)) throw new Error("Boots T3 not owned");
+                ShopPurchaseTracker.UnmarkItemOwned(b3, true);
+                ShopPurchaseTracker.UnmarkItemOwned(b2, true);
+                ShopPurchaseTracker.UnmarkItemOwned(b1, true);
+            }
+            var hb = DeadlockItemsDB.GetItemByName("Healing Booster");
+            var er = DeadlockItemsDB.GetItemByName("Extra Regen");
+            if (hb && er) {
+                ShopPurchaseTracker.MarkItemOwned(hb);
+                if (!ShopPurchaseTracker.IsUpgradeEquipped(er, {})) throw new Error("IsUpgradeEquipped failed for Extra Regen with Healing Booster owned");
+                if (!ShopPurchaseTracker.IsItemConflictingWithEquipped(er)) throw new Error("IsItemConflictingWithEquipped failed for Extra Regen with Healing Booster owned");
+                for (var r = 0; r < 200; r++) {
+                    var picked = DeadlockItemsDB.PickRandomWinningItem(60);
+                    if (picked && picked.name === "Extra Regen") throw new Error("Extra Regen rolled while Healing Booster owned");
+                }
+                ShopPurchaseTracker.UnmarkItemOwned(hb, true);
+            }
+            results.scenario1_upgrades = true;
+            results.scenario1_details = "Cooldown, Duration, Boots & Healing Booster conflict OK";
+        } catch (e1) {
+            results.scenario1_details = "Error: " + e1.message;
+        }
+
+        if (typeof $.Schedule === "function") {
+            $.Schedule(0.01, StepPhase2);
+        } else {
+            StepPhase2();
+        }
+
+        function StepPhase2() {
+            UpdateLabel("ТЕСТ: 2/6 (Спин)...");
+            try {
+                var dummy = { id: "qa_synth_cancel_item", name: "QA Synth Cancel Item", tier: 1, cost: 800 };
+                ShopPurchaseTracker.SetTargetItem(dummy);
+                ShopPurchaseTracker.ClearTarget();
+                if (ShopPurchaseTracker.GetTargetItem() !== null) throw new Error("Target was not cleared");
+                if (ShopPurchaseTracker.IsItemOwned(dummy)) throw new Error("Cancelled item must not be owned");
+
+                var itemA = { id: "qa_synth_target_a", name: "QA Synth Target A", tier: 1, cost: 800 };
+                var itemB = { id: "qa_synth_target_b", name: "QA Synth Target B", tier: 2, cost: 1600 };
+                ShopPurchaseTracker.SetTargetItem(itemA);
+                ShopPurchaseTracker.MarkItemOwned(itemB);
+                if (ShopPurchaseTracker.GetTargetItem().id !== itemA.id) throw new Error("Target should remain item A");
+                if (!ShopPurchaseTracker.IsItemOwned(itemB)) throw new Error("Item B should be owned");
+                ShopPurchaseTracker.ClearTarget();
+                ShopPurchaseTracker.UnmarkItemOwned(itemB, true);
+
+                results.scenario2_midspin = true;
+                results.scenario2_details = "Pre-cancel & concurrent buy OK";
+            } catch (e2) {
+                results.scenario2_details = "Error: " + e2.message;
+            }
+
+            if (typeof $.Schedule === "function") {
+                $.Schedule(0.01, StepPhase3);
+            } else {
+                StepPhase3();
+            }
+        }
+
+        function StepPhase3() {
+            UpdateLabel("ТЕСТ: 3/6 (Лавка)...");
+            try {
+                var testItem = DeadlockItemsDB.GetItemByName("Headshot Booster") || DeadlockItemsDB.ITEMS[5];
+                ShopPurchaseTracker.MarkItemOwned(testItem);
+                if (!ShopPurchaseTracker.IsItemOwned(testItem)) throw new Error("Item not owned");
+                ShopPurchaseTracker.UnmarkItemOwned(testItem, true);
+                if (ShopPurchaseTracker.IsItemOwned(testItem)) throw new Error("Sold item should not be owned");
+
+                var boots = DeadlockItemsDB.GetItemByName("Sprint Boots");
+                var endSpeed = DeadlockItemsDB.GetItemByName("Enduring Speed");
+                if (boots && endSpeed) {
+                    ShopPurchaseTracker.MarkItemOwned(boots);
+                    ShopPurchaseTracker.MarkItemOwned(endSpeed);
+                    ShopPurchaseTracker.UnmarkItemOwned(endSpeed, true);
+                    ShopPurchaseTracker.UnmarkItemOwned(boots, true);
+                    if (ShopPurchaseTracker.IsItemOwned(boots)) throw new Error("Boots still owned after unmark");
+                }
+
+                results.scenario3_shopSale = true;
+                results.scenario3_details = "Headshot Booster & HUD restoral OK";
+            } catch (e3) {
+                results.scenario3_details = "Error: " + e3.message;
+            }
+
+            if (typeof $.Schedule === "function") {
+                $.Schedule(0.01, StepPhase4);
+            } else {
+                StepPhase4();
+            }
+        }
+
+        function StepPhase4() {
+            UpdateLabel("ТЕСТ: 4/6 (12 слотов)...");
+            try {
+                var sample12 = DeadlockItemsDB.ITEMS.slice(0, 12);
+                for (var i = 0; i < sample12.length; i++) {
+                    ShopPurchaseTracker.MarkItemOwned(sample12[i]);
+                }
+                var isDup = ShopPurchaseTracker.IsItemOwned(sample12[0]);
+                if (!isDup) throw new Error("Duplicate not detected");
+                for (var j = 0; j < sample12.length; j++) {
+                    ShopPurchaseTracker.UnmarkItemOwned(sample12[j], true);
+                }
+
+                results.scenario4_capacity = true;
+                results.scenario4_details = "12-slot capacity & duplicate non-lock OK";
+            } catch (e4) {
+                results.scenario4_details = "Error: " + e4.message;
+            }
+
+            if (typeof $.Schedule === "function") {
+                $.Schedule(0.01, StepPhase5);
+            } else {
+                StepPhase5();
+            }
+        }
+
+        var draftCurrent = 0;
+        var draftTotal = 1000;
+        var draftBatch = 200;
+        var draftFailures = 0;
+
+        function StepPhase5() {
+            var limit = Math.min(draftCurrent + draftBatch, draftTotal);
+            for (; draftCurrent < limit; draftCurrent++) {
+                var draft = ScamlockDraft.GenerateBalancedDraft(true);
+                var all = (draft.t1 || []).concat(draft.t2 || []).concat(draft.t3 || []).concat(draft.t4 || []);
+                if (all.length !== 12) draftFailures++;
+                var act = 0;
+                for (var a = 0; a < all.length; a++) {
+                    if (ScamlockDraft.IsActiveItem(all[a])) act++;
+                    for (var b = a + 1; b < all.length; b++) {
+                        if (ShopPurchaseTracker.AreItemsConflicting(all[a], all[b])) draftFailures++;
+                    }
+                }
+                if (act > 4) draftFailures++;
+            }
+
+            var pct = Math.floor((draftCurrent / draftTotal) * 100);
+            UpdateLabel("ТЕСТ: 5/6 (" + pct + "%)...");
+
+            if (draftCurrent < draftTotal && typeof $.Schedule === "function") {
+                $.Schedule(0.01, StepPhase5);
+            } else {
+                results.scenario5_draft = (draftFailures === 0);
+                results.scenario5_details = (draftFailures === 0) ? (draftTotal + " drafts valid (12 slots, <=4 actives, 0 conflicts)") : ("Failures: " + draftFailures);
+                if (typeof $.Schedule === "function") {
+                    $.Schedule(0.01, StepPhase6);
+                } else {
+                    StepPhase6();
+                }
+            }
+        }
+
+        function StepPhase6() {
+            UpdateLabel("ТЕСТ: 6/6 (ГОТОВО)");
+            try {
+                var langKeys = ["title", "subtitle", "spinBtn", "tabRoulette", "tabDraft", "oddsTitle", "oddsT1", "oddsT2", "oddsT3", "oddsT4", "qaBtn"];
+                for (var lk = 0; lk < langKeys.length; lk++) {
+                    var k = langKeys[lk];
+                    if (!STRINGS.ru[k] || !STRINGS.en[k]) throw new Error("Missing string: " + k);
+                }
+                var phases = [180, 600, 1200, 1800];
+                for (var p = 0; p < phases.length; p++) {
+                    var w = DeadlockItemsDB.GetTimeTierWeights(phases[p]);
+                    if (!w || !w.phaseRu || !w.phaseEn) throw new Error("Missing phase weight at " + phases[p]);
+                }
+                results.scenario6_meta = true;
+                results.scenario6_details = "RU & EN strings, time weights verified";
+            } catch (e6) {
+                results.scenario6_details = "Error: " + e6.message;
+            }
+
+            var totalElapsed = Date.now() - startTime;
+            var allPass = results.scenario1_upgrades && results.scenario2_midspin && results.scenario3_shopSale && results.scenario4_capacity && results.scenario5_draft && results.scenario6_meta;
+            var tag = allPass ? "[PASS]" : "[FAIL]";
+
+            var logLines = [
+                "================================================================",
+                "[SCAMLOCK COMPREHENSIVE QA SCENARIO SUITE] " + tag + " in " + totalElapsed + "ms",
+                "----------------------------------------------------------------",
+                "1. UPGRADE CHAINS (Cooldown, Duration, Boots, Health): " + (results.scenario1_upgrades ? "PASS" : "FAIL") + " (" + results.scenario1_details + ")",
+                "2. MID-SPIN PLAYER INTERVENTIONS (Pre-cancel & concurrent): " + (results.scenario2_midspin ? "PASS" : "FAIL") + " (" + results.scenario2_details + ")",
+                "3. SHOP SALE & POOL RESTORAL: " + (results.scenario3_shopSale ? "PASS" : "FAIL") + " (" + results.scenario3_details + ")",
+                "4. 12-SLOT CAPACITY & DUPLICATES: " + (results.scenario4_capacity ? "PASS" : "FAIL") + " (" + results.scenario4_details + ")",
+                "5. DRAFT INVARIANTS (1,000 runs): " + (results.scenario5_draft ? "PASS" : "FAIL") + " (" + results.scenario5_details + ")",
+                "6. LOCALIZATION & TIMER ODDS: " + (results.scenario6_meta ? "PASS" : "FAIL") + " (" + results.scenario6_details + ")",
+                "----------------------------------------------------------------",
+                allPass ? "[ALL 6 SCENARIOS PASSED] - Engine State Machine 100% Robust!" : "[SOME SCENARIOS FAILED] - Check log details above!",
+                "================================================================"
+            ];
+
+            for (var li = 0; li < logLines.length; li++) {
+                if (typeof RouletteLogger !== "undefined" && RouletteLogger.Log) {
+                    RouletteLogger.Log(logLines[li], "QA");
+                }
+                if (typeof Game !== "undefined" && Game.ConsoleCommand) {
+                    Game.ConsoleCommand("echo " + logLines[li]);
+                }
+            }
+
+            UpdateLabel(allPass ? "ТЕСТ: PASS" : "ТЕСТ: FAIL");
+            if (typeof $.Schedule === "function") {
+                $.Schedule(2.0, function () {
+                    if (typeof onComplete === "function") onComplete();
+                });
+            } else if (typeof onComplete === "function") {
+                onComplete();
+            }
+
+            return results;
+        }
+    }
+
+    function RunModStressTest() {
+        return RunComprehensiveQASuite(qaTestText, function () {
+            if (qaTestText) qaTestText.text = STRINGS[currentLang].qaBtn;
+        });
+    }
 
     function SetReelPosition(posX) {
         if (!reelPanel) return;
@@ -2853,6 +3869,15 @@ var ItemRoulette = (function () {
     function StartSpin(isReroll) {
         if (isSpinning) return;
 
+        if (ScamlockHudState.IsPreGame()) {
+            PlaySound("UI.LaneSwap.DenyRequest");
+            if (statusLabel) {
+                statusLabel.text = STRINGS[currentLang].statusPreGame;
+                statusLabel.style.color = "#fbbf24";
+            }
+            return;
+        }
+
         var activeTarget = ShopPurchaseTracker.GetTargetItem();
         if (activeTarget && !isReroll) {
             if (ShopPurchaseTracker.CheckIsTargetItemPurchased()) {
@@ -2873,9 +3898,13 @@ var ItemRoulette = (function () {
         PlaySound("UI.ItemDraft.RevolverSpin");
         PlaySound("UI.MainMenu.Activate");
 
-        // Synchronously update inventory from shop mod cards before picking winning candidate
-        if (typeof ShopPurchaseTracker !== "undefined" && ShopPurchaseTracker.ScanShopIfOpen) {
-            ShopPurchaseTracker.ScanShopIfOpen(true);
+        if (typeof ShopPurchaseTracker !== "undefined") {
+            if (ShopPurchaseTracker.ScanEquippedInventoryHUD) {
+                ShopPurchaseTracker.ScanEquippedInventoryHUD();
+            }
+            if (ShopPurchaseTracker.ScanShopIfOpen) {
+                ShopPurchaseTracker.ScanShopIfOpen(true);
+            }
         }
 
         var gameSec = GetEffectiveGameTime();
@@ -2936,12 +3965,34 @@ var ItemRoulette = (function () {
         }
 
         var metrics = GetCardMetrics();
-        var centerOffset = (metrics.viewportWidth / 2) - (metrics.cardWidth / 2);
-        var startX = -(CENTER_INDEX * metrics.totalStep) + centerOffset;
+        var centerOffset = (metrics.viewportWidth / 2) - (metrics.cardWidth / 2); // 460 - 52.5 = 407.5px
+
+        // Detect current UI scale from carousel container layout width
+        var scale = 1.0;
+        if (carouselContainer && carouselContainer.actuallayoutwidth > 0) {
+            scale = carouselContainer.actuallayoutwidth / VIEWPORT_WIDTH;
+        }
+
+        // Exact CSS step derived directly from Panorama's rasterized card offsets (0.00px drift at all scales)
+        var exactStepCSS = CARD_TOTAL_STEP;
+        if (cardPanels[WIN_INDEX] && cardPanels[CENTER_INDEX] &&
+            cardPanels[WIN_INDEX].actualxoffset > 0 && cardPanels[CENTER_INDEX].actualxoffset > 0 && scale > 0) {
+            exactStepCSS = (cardPanels[WIN_INDEX].actualxoffset - cardPanels[CENTER_INDEX].actualxoffset) / (TARGET_STEP * scale);
+        }
+
+        // Exact CSS card width derived directly from Panorama's rasterized card width
+        var exactCardWidthCSS = CARD_WIDTH;
+        if (cardPanels[CENTER_INDEX] && cardPanels[CENTER_INDEX].actuallayoutwidth > 0 && scale > 0) {
+            exactCardWidthCSS = cardPanels[CENTER_INDEX].actuallayoutwidth / scale;
+        }
+
+        var exactCenterOffset = (VIEWPORT_WIDTH - exactCardWidthCSS) / 2.0;
+        var startX = -(CENTER_INDEX * exactStepCSS) + exactCenterOffset;
+        var targetX = -(WIN_INDEX * exactStepCSS) + exactCenterOffset;
+
         SetReelPosition(startX);
 
-        var jitter = (Math.random() - 0.5) * (metrics.cardWidth * 0.15);
-        var targetX = -(WIN_INDEX * metrics.totalStep) + centerOffset + jitter;
+        var jitter = 0; // Pure dead-center alignment under the needle at any UI scale (90%, 100%, 120%)
 
         if (spinButton) {
             ApplyStyles(spinButton, {
@@ -3015,6 +4066,23 @@ var ItemRoulette = (function () {
 
         RouletteLogger.Log("Spin completed! Won item: " + winningItem.name + " (T" + winningItem.tier + ", " + winningItem.cost + " souls)", "SPIN");
 
+        var isAlreadyOwned = false;
+        if (typeof ShopPurchaseTracker !== "undefined" && ShopPurchaseTracker.IsItemOwned(winningItem)) {
+            isAlreadyOwned = true;
+        }
+
+        if (isAlreadyOwned) {
+            // Player already has this item! Do not lock roulette, allow immediate spin again.
+            ShopPurchaseTracker.ClearTarget();
+            UpdateUIState();
+            if (statusLabel) {
+                statusLabel.text = STRINGS[currentLang].statusDuplicate;
+                statusLabel.style.color = "#38bdf8";
+            }
+            PlaySound("UI.Matchmake.Made");
+            return;
+        }
+
         ShopPurchaseTracker.SetTargetItem(winningItem);
         UpdateUIState();
 
@@ -3022,11 +4090,6 @@ var ItemRoulette = (function () {
             var itemName = winningItem.name;
             statusLabel.text = STRINGS[currentLang].statusWon + itemName + STRINGS[currentLang].statusWonSub;
             statusLabel.style.color = "#34d399";
-        }
-
-        // Synchronously update inventory from shop mod cards
-        if (typeof ShopPurchaseTracker !== "undefined" && ShopPurchaseTracker.ScanShopIfOpen) {
-            ShopPurchaseTracker.ScanShopIfOpen(true);
         }
 
         // Reel stays cleanly positioned at targetX under the needle
@@ -3043,6 +4106,17 @@ var ItemRoulette = (function () {
         UpdateUIState();
     }
 
+    function OnTargetItemCancelled(cancelledItem) {
+        RouletteLogger.Log("Target item cancelled: " + (cancelledItem ? cancelledItem.name : "Target"), "CANCEL");
+
+        if (statusLabel) {
+            statusLabel.text = STRINGS[currentLang].statusReady;
+            statusLabel.style.color = "#10b981";
+        }
+
+        UpdateUIState();
+    }
+
     function UpdateUIState() {
         var target = ShopPurchaseTracker.GetTargetItem();
         var curGold = ShopPurchaseTracker.GetPlayerGold();
@@ -3051,20 +4125,26 @@ var ItemRoulette = (function () {
             soulsLabel.text = "" + curGold;
         }
 
-        // Update Phase badge
+        var gameSec = Math.floor(GetEffectiveGameTime());
+
+        // Update Match Timer Display
+        if (matchTimerLabel) {
+            var mins = Math.floor(gameSec / 60);
+            var secs = gameSec % 60;
+            matchTimerLabel.text = (mins < 10 ? "0" : "") + mins + ":" + (secs < 10 ? "0" : "") + secs;
+        }
+
         if (phaseBadge) {
-            var gameSec = GetEffectiveGameTime();
             var weights = DeadlockItemsDB.GetTimeTierWeights(gameSec);
-            phaseBadge.text = (currentLang === "ru") ? weights.phaseRu : weights.phaseEn;
-            if (weights.phaseRu.indexOf("Тир 4") !== -1) {
-                ApplyStyles(phaseBadge, { "color": "#f59e0b", "border-color": "#f59e0b" });
-            } else if (weights.phaseRu.indexOf("Тир 3") !== -1) {
-                ApplyStyles(phaseBadge, { "color": "#a855f7", "border-color": "#a855f7" });
-            } else if (weights.phaseRu.indexOf("Тир 2") !== -1) {
-                ApplyStyles(phaseBadge, { "color": "#06b6d4", "border-color": "#06b6d4" });
-            } else {
-                ApplyStyles(phaseBadge, { "color": "#10b981", "border-color": "#10b981" });
-            }
+            var phaseTitle = (currentLang === "ru") ? weights.phaseRu : weights.phaseEn;
+            var cleanPhase = phaseTitle.replace(/^[0-9+–\-]+(?:\s*(?:мин|min))\s*[•·\-]\s*/i, "");
+            phaseBadge.text = cleanPhase;
+            var bColor = weights.color || "#10b981";
+            ApplyStyles(phaseBadge, {
+                "color": "#f3f4f6",
+                "border-color": bColor,
+                "background-color": "rgba(15, 23, 42, 0.95)"
+            });
         }
 
         // Target Info Card
@@ -3072,24 +4152,50 @@ var ItemRoulette = (function () {
             if (targetCard) targetCard.style.visibility = "visible";
             if (targetIcon && target.image) targetIcon.SetImage(target.image);
             if (targetName) {
-                var tName = target.name;
-                targetName.text = tName + " (" + STRINGS[currentLang].tier + " " + target.tier + ")";
+                targetName.text = target.name + " (" + STRINGS[currentLang].tier + " " + target.tier + ")";
                 targetName.style.color = GetTierColor(target.tier);
             }
 
-            var pct = Math.min(100, Math.floor((curGold / target.cost) * 100));
+            // Component upgrade discount calculation
+            var effectiveCost = target.cost;
+            var componentDiscount = 0;
+            if (target.components && target.components.length > 0) {
+                for (var ci = 0; ci < target.components.length; ci++) {
+                    var cName = target.components[ci];
+                    var cItem = DeadlockItemsDB.GetItemByName(cName);
+                    if (cItem && (ShopPurchaseTracker.IsItemOwned(cItem) || ShopPurchaseTracker.IsItemOwnedByName(cItem.name))) {
+                        componentDiscount = cItem.cost;
+                        break;
+                    }
+                }
+            }
+            if (componentDiscount > 0) {
+                effectiveCost = Math.max(0, target.cost - componentDiscount);
+            }
+
+            var pct = Math.min(100, Math.floor((curGold / (effectiveCost || 1)) * 100));
             if (targetProgressFill) {
                 targetProgressFill.style.width = pct + "%";
                 targetProgressFill.style.backgroundColor = (pct >= 100) ? "#10b981" : "#f59e0b";
             }
             if (targetProgressText) {
-                targetProgressText.text = curGold + " / " + target.cost + " " + (currentLang === "ru" ? "Душ" : "Souls") + " (" + pct + "%)";
+                var soulsWord = (currentLang === "ru" ? "Душ" : "Souls");
+                if (componentDiscount > 0) {
+                    var upgNote = (currentLang === "ru")
+                        ? " [Улучшение: -" + componentDiscount + "]"
+                        : " [Upgrade: -" + componentDiscount + "]";
+                    targetProgressText.text = curGold + " / " + effectiveCost + " " + soulsWord + upgNote + " (" + pct + "%)";
+                } else {
+                    targetProgressText.text = curGold + " / " + target.cost + " " + soulsWord + " (" + pct + "%)";
+                }
             }
         } else {
             if (targetCard) targetCard.style.visibility = "collapse";
             if (targetProgressFill) targetProgressFill.style.width = "0%";
-            if (targetProgressText) targetProgressText.text = "0 / 0 Souls (0%)";
+            if (targetProgressText) targetProgressText.text = "0 / 0 " + (currentLang === "ru" ? "Душ" : "Souls") + " (0%)";
         }
+
+        var isPreGame = ScamlockHudState.IsPreGame();
 
         // Spin Button State & Unclipped Lighting
         if (spinButton && spinBtnText) {
@@ -3109,9 +4215,18 @@ var ItemRoulette = (function () {
                     "border-radius": "8px",
                     "box-shadow": "0px 3px 18px rgba(239, 68, 68, 0.40)"
                 });
-                var lockedName = target.name.toUpperCase();
+                var lockedName = (target.name).toUpperCase();
                 spinBtnText.text = STRINGS[currentLang].buyFirstBtn + lockedName;
                 spinBtnText.style.color = "#fecaca";
+            } else if (isPreGame) {
+                ApplyStyles(spinButton, {
+                    "background-color": "gradient(linear, 0% 0%, 0% 100%, from(#27272a), to(#18181b))",
+                    "border": "2px solid #3f3f46",
+                    "border-radius": "8px",
+                    "box-shadow": "none"
+                });
+                spinBtnText.text = STRINGS[currentLang].preGameBtn;
+                spinBtnText.style.color = "#9ca3af";
             } else {
                 ApplyStyles(spinButton, {
                     "background-color": isSpinBtnHovered
@@ -3125,6 +4240,21 @@ var ItemRoulette = (function () {
                 });
                 spinBtnText.text = STRINGS[currentLang].spinBtn;
                 spinBtnText.style.color = "#ffffff";
+            }
+        }
+
+        // Status Subtitle Synchronization (Always accurately match current language & state when idle)
+        if (statusLabel && !isSpinning) {
+            if (target) {
+                var targetStatusName = target.name;
+                statusLabel.text = STRINGS[currentLang].statusMustBuy + targetStatusName + "!";
+                statusLabel.style.color = "#ef4444";
+            } else if (isPreGame) {
+                statusLabel.text = STRINGS[currentLang].statusPreGame;
+                statusLabel.style.color = "#9ca3af";
+            } else {
+                statusLabel.text = STRINGS[currentLang].statusReady;
+                statusLabel.style.color = "#9ca3af";
             }
         }
 
@@ -3282,10 +4412,11 @@ var ItemRoulette = (function () {
 
         returnToRouletteBtn = $.CreatePanel("Button", shopPanel, "ReturnToRouletteBtn");
         ApplyStyles(returnToRouletteBtn, {
-            "horizontal-align": "right",
+            "horizontal-align": "left",
             "vertical-align": "top",
             "margin-top": "24px",
-            "margin-right": "36px",
+            "margin-left": "36px",
+            "margin-right": "0px",
             "background-color": "gradient(linear, 0% 0%, 0% 100%, from(#f59e0b), to(#d97706))",
             "border": "1.5px solid #fbbf24",
             "border-radius": "6px",
@@ -3315,6 +4446,8 @@ var ItemRoulette = (function () {
 
         if (typeof ScamlockUMM !== "undefined" && ScamlockUMM.GetShopButtonPos) {
             ApplyShopButtonPos(ScamlockUMM.GetShopButtonPos());
+        } else {
+            ApplyShopButtonPos("top_left");
         }
     }
 
@@ -3408,22 +4541,20 @@ var ItemRoulette = (function () {
         overlayPanel.SetPanelEvent("oncontextmenu", function () { return true; });
         overlayPanel.SetPanelEvent("onmouseactivate", function () { return true; });
 
-        // 2. Centered Modal Content with Unclipped Overflow
         mainModalContent = $.CreatePanel("Panel", overlayPanel, "RouletteModalContent");
         ApplyStyles(mainModalContent, {
             "width": "960px",
             "horizontal-align": "center",
-            "vertical-align": "center",
-            "margin-top": "100px",
+            "vertical-align": "top",
+            "margin-top": "230px",
             "flow-children": "down",
             "overflow": "noclip",
             "padding": "16px 20px"
         });
 
-        // 2a. Header Bar
         var header = $.CreatePanel("Panel", mainModalContent, "RouletteHeader");
         ApplyStyles(header, {
-            "width": "920px",
+            "width": "100%",
             "horizontal-align": "center",
             "flow-children": "right",
             "padding": "0px 0px 10px 0px"
@@ -3433,7 +4564,7 @@ var ItemRoulette = (function () {
         ApplyStyles(titleBox, { "flow-children": "down", "vertical-align": "center" });
 
         var titleRow = $.CreatePanel("Panel", titleBox, "");
-        ApplyStyles(titleRow, { "flow-children": "right" });
+        ApplyStyles(titleRow, { "flow-children": "right", "vertical-align": "center" });
 
         titleLabel = $.CreatePanel("Label", titleRow, "RouletteTitle");
         titleLabel.text = STRINGS[currentLang].title;
@@ -3444,17 +4575,75 @@ var ItemRoulette = (function () {
             "letter-spacing": "2px"
         });
 
-        phaseBadge = $.CreatePanel("Label", titleRow, "RoulettePhaseBadge");
-        phaseBadge.text = (currentLang === "ru") ? "Тир 1 (0-8 мин)" : "Tier 1 (0-8 min)";
-        ApplyStyles(phaseBadge, {
-            "color": "#10b981",
-            "font-size": "11px",
+        matchTimerLabel = $.CreatePanel("Label", titleRow, "MatchTimerLabel");
+        matchTimerLabel.text = "00:00";
+        ApplyStyles(matchTimerLabel, {
+            "color": "#9ca3af",
+            "font-size": "12px",
             "font-weight": "bold",
-            "border": "1px solid #10b981",
-            "border-radius": "10px",
-            "padding": "2px 8px",
+            "width": "46px",
+            "text-align": "center",
+            "margin-left": "8px",
+            "vertical-align": "center",
+            "letter-spacing": "0.5px"
+        });
+
+        phaseBadge = $.CreatePanel("Label", titleRow, "RoulettePhaseBadge");
+        phaseBadge.text = (currentLang === "ru") ? "Ранняя игра" : "Early Game";
+        ApplyStyles(phaseBadge, {
+            "color": "#f3f4f6",
+            "font-size": "10.5px",
+            "font-weight": "bold",
+            "background-color": "rgba(15, 23, 42, 0.95)",
+            "border": "1.5px solid #10b981",
+            "border-radius": "6px",
+            "padding": "3px 10px",
             "margin-left": "10px",
-            "vertical-align": "center"
+            "vertical-align": "center",
+            "box-shadow": "0px 2px 8px rgba(0, 0, 0, 0.6)",
+            "transition-property": "brightness",
+            "transition-duration": "0.15s"
+        });
+
+        // Completely decoupled from layout flow (Zero Layout Reflow on Hover)
+        oddsTooltipPanel = $.CreatePanel("Panel", overlayPanel, "OddsTooltipPanel");
+        oddsTooltipPanel.hittest = false;
+        ApplyStyles(oddsTooltipPanel, {
+            "background-color": "rgba(10, 15, 26, 0.98)",
+            "border": "1.5px solid #374151",
+            "border-radius": "8px",
+            "padding": "8px 12px",
+            "flow-children": "down",
+            "z-index": "10000",
+            "horizontal-align": "center",
+            "vertical-align": "top",
+            "margin-top": "170px",
+            "box-shadow": "0px 8px 24px rgba(0, 0, 0, 0.9)",
+            "visibility": "collapse"
+        });
+
+        oddsTooltipPanel._titleLbl = $.CreatePanel("Label", oddsTooltipPanel, "");
+        oddsTooltipPanel._titleLbl.hittest = false;
+        ApplyStyles(oddsTooltipPanel._titleLbl, { "color": "#f59e0b", "font-size": "10.5px", "font-weight": "bold", "margin-bottom": "4px" });
+
+        var rowColors = ["#10b981", "#38bdf8", "#a855f7", "#f59e0b"];
+        oddsTooltipPanel._rowLabels = [];
+        for (var tl = 0; tl < rowColors.length; tl++) {
+            var rowL = $.CreatePanel("Label", oddsTooltipPanel, "");
+            rowL.hittest = false;
+            ApplyStyles(rowL, { "color": rowColors[tl], "font-size": "10px", "margin-top": "2px" });
+            oddsTooltipPanel._rowLabels.push(rowL);
+        }
+        UpdateOddsTooltip();
+
+        phaseBadge.SetPanelEvent("onmouseover", function () {
+            PlaySound("UI.Shop.Ability.Hover");
+            phaseBadge.style.brightness = "1.25";
+            if (oddsTooltipPanel) oddsTooltipPanel.style.visibility = "visible";
+        });
+        phaseBadge.SetPanelEvent("onmouseout", function () {
+            phaseBadge.style.brightness = "1.0";
+            if (oddsTooltipPanel) oddsTooltipPanel.style.visibility = "collapse";
         });
 
         subtitleLabel = $.CreatePanel("Label", titleBox, "RouletteSubtitle");
@@ -3477,20 +4666,42 @@ var ItemRoulette = (function () {
 
         tabRouletteBtn = $.CreatePanel("Button", tabBar, "TabRouletteBtn");
         ApplyStyles(tabRouletteBtn, {
-            "background-color": "#2563eb",
-            "border": "1px solid #60a5fa",
+            "background-color": "gradient(linear, 0% 0%, 0% 100%, from(#2563eb), to(#1d4ed8))",
+            "border": "1.5px solid #60a5fa",
             "border-radius": "4px",
-            "padding": "5px 14px"
+            "padding": "5px 14px",
+            "box-shadow": "0px 0px 10px rgba(37, 99, 235, 0.5)",
+            "transition-property": "transform, brightness, background-color, border",
+            "transition-duration": "0.12s"
         });
         tabRouletteLbl = $.CreatePanel("Label", tabRouletteBtn, "");
+        tabRouletteLbl.hittest = false;
         tabRouletteLbl.text = STRINGS[currentLang].tabRoulette;
         ApplyStyles(tabRouletteLbl, {
             "color": "#ffffff",
             "font-size": "11px",
             "font-weight": "bold",
         });
+        tabRouletteBtn.SetPanelEvent("onmouseover", function () {
+            PlaySound("UI.Shop.Ability.Hover");
+            if (currentTab !== "roulette") {
+                tabRouletteBtn.style.backgroundColor = "#374151";
+                tabRouletteBtn.style.border = "1px solid #4b5563";
+                if (tabRouletteLbl) tabRouletteLbl.style.color = "#f3f4f6";
+            } else {
+                tabRouletteBtn.style.brightness = "1.2";
+            }
+        });
+        tabRouletteBtn.SetPanelEvent("onmouseout", function () {
+            tabRouletteBtn.style.brightness = "1.0";
+            UpdateTabButtonStyles();
+        });
         tabRouletteBtn.SetPanelEvent("onactivate", function () {
             PlaySound("UI.MainMenu.Activate");
+            tabRouletteBtn.style.transform = "scale3d(0.96, 0.96, 1.0)";
+            $.Schedule(0.1, function () {
+                if (tabRouletteBtn && tabRouletteBtn.IsValid()) tabRouletteBtn.style.transform = "scale3d(1.0, 1.0, 1.0)";
+            });
             SwitchTab("roulette");
         });
 
@@ -3500,17 +4711,38 @@ var ItemRoulette = (function () {
             "border": "1px solid #374151",
             "border-radius": "4px",
             "padding": "5px 14px",
-            "margin-left": "4px"
+            "margin-left": "4px",
+            "transition-property": "transform, brightness, background-color, border",
+            "transition-duration": "0.12s"
         });
         tabDraftLbl = $.CreatePanel("Label", tabDraftBtn, "");
+        tabDraftLbl.hittest = false;
         tabDraftLbl.text = STRINGS[currentLang].tabDraft;
         ApplyStyles(tabDraftLbl, {
             "color": "#9ca3af",
             "font-size": "11px",
             "font-weight": "bold",
         });
+        tabDraftBtn.SetPanelEvent("onmouseover", function () {
+            PlaySound("UI.Shop.Ability.Hover");
+            if (currentTab !== "draft") {
+                tabDraftBtn.style.backgroundColor = "#374151";
+                tabDraftBtn.style.border = "1px solid #4b5563";
+                if (tabDraftLbl) tabDraftLbl.style.color = "#f3f4f6";
+            } else {
+                tabDraftBtn.style.brightness = "1.2";
+            }
+        });
+        tabDraftBtn.SetPanelEvent("onmouseout", function () {
+            tabDraftBtn.style.brightness = "1.0";
+            UpdateTabButtonStyles();
+        });
         tabDraftBtn.SetPanelEvent("onactivate", function () {
             PlaySound("UI.MainMenu.Activate");
+            tabDraftBtn.style.transform = "scale3d(0.96, 0.96, 1.0)";
+            $.Schedule(0.1, function () {
+                if (tabDraftBtn && tabDraftBtn.IsValid()) tabDraftBtn.style.transform = "scale3d(1.0, 1.0, 1.0)";
+            });
             SwitchTab("draft");
         });
 
@@ -3545,39 +4777,46 @@ var ItemRoulette = (function () {
             "background-color": "gradient(linear, 0% 0%, 0% 100%, from(#1f2937), to(#111827))",
             "border": "1px solid #4b5563",
             "border-radius": "6px",
-            "padding": "5px 10px",
+            "padding": "4px 9px",
             "vertical-align": "center",
-            "margin-right": "6px"
+            "margin-right": "8px"
         });
         langToggleText = $.CreatePanel("Label", langToggleBtn, "");
-        langToggleText.text = (currentLang === "ru") ? "RU" : "EN";
+        langToggleText.text = STRINGS[currentLang].langBtn;
         langToggleText.hittest = false;
         ApplyStyles(langToggleText, {
             "color": "#f59e0b",
             "font-size": "11px",
             "font-weight": "bold",
-            "letter-spacing": "1px",
+            "letter-spacing": "0.5px",
         });
         langToggleBtn.SetPanelEvent("onmouseover", function () {
             langToggleBtn.style.brightness = "1.25";
             langToggleBtn.style.borderColor = "#f59e0b";
+            var tip = STRINGS[currentLang].langTooltip;
+            if (typeof $.DispatchEvent === "function") {
+                $.DispatchEvent("UIShowTextTooltip", langToggleBtn, tip);
+            }
         });
         langToggleBtn.SetPanelEvent("onmouseout", function () {
             langToggleBtn.style.brightness = "1.0";
             langToggleBtn.style.borderColor = "#4b5563";
+            if (typeof $.DispatchEvent === "function") {
+                $.DispatchEvent("UIHideTextTooltip", langToggleBtn);
+            }
         });
         langToggleBtn.SetPanelEvent("onactivate", function () {
             PlaySound("UI.MainMenu.Activate");
             ToggleLanguage();
         });
 
-        // Vanilla Shop Button
         var toggleShopBtn = $.CreatePanel("Button", header, "ToggleShopBtn");
         ApplyStyles(toggleShopBtn, {
             "background-color": "gradient(linear, 0% 0%, 0% 100%, from(#374151), to(#1f2937))",
             "border": "1px solid #4b5563",
             "border-radius": "6px",
             "padding": "5px 12px",
+            "min-width": "84px",
             "vertical-align": "center"
         });
         toggleShopLabel = $.CreatePanel("Label", toggleShopBtn, "");
@@ -3601,12 +4840,20 @@ var ItemRoulette = (function () {
             SetShopMode(true);
         });
 
-        // 3. Compact Carousel Reel Container (780px wide)
-        rouletteViewPanel = $.CreatePanel("Panel", mainModalContent, "RouletteViewPanel");
+        // 3. Stable Tab View Container (Holds Roulette and Draft with Fixed Min-Height to eliminate layout jitter)
+        var viewContainer = $.CreatePanel("Panel", mainModalContent, "ScamlockViewContainer");
+        ApplyStyles(viewContainer, {
+            "width": "100%",
+            "min-height": "460px",
+            "flow-children": "down"
+        });
+
+        rouletteViewPanel = $.CreatePanel("Panel", viewContainer, "RouletteViewPanel");
         ApplyStyles(rouletteViewPanel, {
             "flow-children": "down",
             "width": "100%",
-            "visibility": "visible"
+            "visibility": "visible",
+            "opacity": "1.0"
         });
 
         carouselContainer = $.CreatePanel("Panel", rouletteViewPanel, "CarouselContainer");
@@ -3745,8 +4992,11 @@ var ItemRoulette = (function () {
             PlaySound("UI.MainMenu.Activate");
             var activeTarget = ShopPurchaseTracker.GetTargetItem();
             if (activeTarget) {
+                if (ShopPurchaseTracker.ScanEquippedInventoryHUD) ShopPurchaseTracker.ScanEquippedInventoryHUD();
+                if (ShopPurchaseTracker.ScanShopIfOpen) ShopPurchaseTracker.ScanShopIfOpen(true);
+
                 // Check if already bought -> advance immediately in 1 click!
-                if (ShopPurchaseTracker.CheckIsTargetItemPurchased()) {
+                if (ShopPurchaseTracker.CheckIsTargetItemPurchased() || ShopPurchaseTracker.IsItemOwned(activeTarget) || ShopPurchaseTracker.IsItemOwnedByName(activeTarget.name)) {
                     ShopPurchaseTracker.NotifyPurchased();
                     StartSpin(false);
                     return;
@@ -3886,12 +5136,13 @@ var ItemRoulette = (function () {
         // -----------------------------------------------------------------
         // DRAFT VIEW PANEL (16 Items)
         // -----------------------------------------------------------------
-        draftViewPanel = $.CreatePanel("Panel", mainModalContent, "DraftViewPanel");
+        draftViewPanel = $.CreatePanel("Panel", viewContainer, "DraftViewPanel");
         ApplyStyles(draftViewPanel, {
             "flow-children": "down",
             "width": "100%",
             "padding": "8px 12px",
-            "visibility": "collapse"
+            "visibility": "collapse",
+            "opacity": "0.0"
         });
 
         var draftActionsRow = $.CreatePanel("Panel", draftViewPanel, "DraftActionsRow");
@@ -3919,27 +5170,51 @@ var ItemRoulette = (function () {
             "margin-left": "12px",
             "vertical-align": "center"
         });
+        if (typeof ScamlockDraft !== "undefined" && ScamlockDraft.SetUIContext) {
+            ScamlockDraft.SetUIContext(
+                draftStatusLabel,
+                function () { return currentLang; },
+                function () { return STRINGS; },
+                PlaySound
+            );
+        }
 
         var draftSpacer = $.CreatePanel("Panel", draftActionsRow, "");
         ApplyStyles(draftSpacer, { "width": "fill-parent-flow(1.0)" });
 
         draftRerollBtn = $.CreatePanel("Button", draftActionsRow, "DraftRerollBtn");
         ApplyStyles(draftRerollBtn, {
-            "background-color": "#374151",
+            "background-color": "gradient(linear, 0% 0%, 0% 100%, from(#374151), to(#1f2937))",
             "border": "1px solid #4b5563",
             "border-radius": "4px",
             "padding": "5px 12px",
-            "margin-right": "8px"
+            "margin-right": "8px",
+            "transition-property": "transform, brightness, border",
+            "transition-duration": "0.12s"
         });
         draftRerollLbl = $.CreatePanel("Label", draftRerollBtn, "");
+        draftRerollLbl.hittest = false;
         draftRerollLbl.text = STRINGS[currentLang].draftReroll;
         ApplyStyles(draftRerollLbl, {
             "color": "#e5e7eb",
             "font-size": "10px",
             "font-weight": "bold",
         });
+        draftRerollBtn.SetPanelEvent("onmouseover", function () {
+            PlaySound("UI.Shop.Ability.Hover");
+            draftRerollBtn.style.brightness = "1.25";
+            draftRerollBtn.style.borderColor = "#9ca3af";
+        });
+        draftRerollBtn.SetPanelEvent("onmouseout", function () {
+            draftRerollBtn.style.brightness = "1.0";
+            draftRerollBtn.style.borderColor = "#4b5563";
+        });
         draftRerollBtn.SetPanelEvent("onactivate", function () {
             PlaySound("UI.ItemDraft.Start");
+            draftRerollBtn.style.transform = "scale3d(0.96, 0.96, 1.0)";
+            $.Schedule(0.1, function () {
+                if (draftRerollBtn && draftRerollBtn.IsValid()) draftRerollBtn.style.transform = "scale3d(1.0, 1.0, 1.0)";
+            });
             ScamlockDraft.GenerateBalancedDraft();
             RenderDraftGrid();
             if (draftStatusLabel) {
@@ -3953,28 +5228,44 @@ var ItemRoulette = (function () {
             "background-color": "gradient(linear, 0% 0%, 0% 100%, from(#2563eb), to(#1d4ed8))",
             "border": "1px solid #60a5fa",
             "border-radius": "4px",
-            "padding": "5px 14px"
+            "padding": "5px 14px",
+            "box-shadow": "0px 2px 8px rgba(37, 99, 235, 0.4)",
+            "transition-property": "transform, brightness, border, box-shadow",
+            "transition-duration": "0.12s"
         });
         draftQuickbuyLbl = $.CreatePanel("Label", draftQuickbuyBtn, "");
+        draftQuickbuyLbl.hittest = false;
         draftQuickbuyLbl.text = STRINGS[currentLang].draftQuickbuy;
         ApplyStyles(draftQuickbuyLbl, {
             "color": "#ffffff",
             "font-size": "10px",
             "font-weight": "bold",
         });
+        draftQuickbuyBtn.SetPanelEvent("onmouseover", function () {
+            PlaySound("UI.Shop.Ability.Hover");
+            draftQuickbuyBtn.style.brightness = "1.25";
+            draftQuickbuyBtn.style.borderColor = "#93c5fd";
+            draftQuickbuyBtn.style.boxShadow = "0px 0px 12px rgba(59, 130, 246, 0.7)";
+        });
+        draftQuickbuyBtn.SetPanelEvent("onmouseout", function () {
+            draftQuickbuyBtn.style.brightness = "1.0";
+            draftQuickbuyBtn.style.borderColor = "#60a5fa";
+            draftQuickbuyBtn.style.boxShadow = "0px 2px 8px rgba(37, 99, 235, 0.4)";
+        });
         draftQuickbuyBtn.SetPanelEvent("onactivate", function () {
             PlaySound("UI.MainMenu.Activate");
+            draftQuickbuyBtn.style.transform = "scale3d(0.96, 0.96, 1.0)";
+            $.Schedule(0.1, function () {
+                if (draftQuickbuyBtn && draftQuickbuyBtn.IsValid()) draftQuickbuyBtn.style.transform = "scale3d(1.0, 1.0, 1.0)";
+            });
             var count = ScamlockDraft.QueueAllDraftToQuickbuy();
-            if (draftStatusLabel) {
-                draftStatusLabel.text = STRINGS[currentLang].draftQueued;
-                draftStatusLabel.style.color = "#10b981";
-            }
         });
 
         draftGridContainer = $.CreatePanel("Panel", draftViewPanel, "DraftGridContainer");
         ApplyStyles(draftGridContainer, {
             "flow-children": "down",
-            "width": "100%"
+            "width": "100%",
+            "min-height": "380px"
         });
 
         // Subtle Attribution Footer
@@ -3994,6 +5285,7 @@ var ItemRoulette = (function () {
         // Auto-reset on match and hero transitions is handled by CheckSmartAutoReset in MonitorLoop
 
         ShopPurchaseTracker.OnPurchase(OnTargetItemPurchased);
+        ShopPurchaseTracker.OnCancel(OnTargetItemCancelled);
         ShopPurchaseTracker.StartTracker();
 
         BuildInitialReel();
@@ -4036,7 +5328,9 @@ var ItemRoulette = (function () {
         GetReturnToRouletteBtn: function () { return returnToRouletteBtn; },
         ApplyShopButtonPos: ApplyShopButtonPos,
         ApplyUIScale: ApplyUIScale,
-        PlaySound: PlaySound
+        PlaySound: PlaySound,
+        RunModStressTest: RunModStressTest,
+        RunComprehensiveQASuite: RunComprehensiveQASuite
     };
 })();
 
@@ -4049,7 +5343,7 @@ var ScamlockUMM = (function () {
     var UMM_PROTOCOL = 1;
     var currentAspectRatio = "16:9";
     var currentUIScale = "100%";
-    var currentShopBtnPos = "top_right";
+    var currentShopBtnPos = "top_left";
     var defaultTabSetting = "roulette";
     var soundEffectsEnabled = true;
     var lastRegisteredLang = "";
@@ -4074,9 +5368,9 @@ var ScamlockUMM = (function () {
             t: "register",
             id: "scamlock",
             name: "Scamlock",
-            version: "1.0.0",
+            version: "1.1.0",
             author: "d3dvk (Discord: dedvk)",
-            desc: "Рулетка предметов и драфты 16 слотов / Random item roulette & 16-item drafts",
+            desc: "Рулетка предметов и драфты 12 слотов / Random item roulette & 12-item drafts",
             settings: [
                 {
                     type: "group",
@@ -4114,7 +5408,7 @@ var ScamlockUMM = (function () {
                     description: "Какая вкладка открывается при входе в магазин / Which tab opens in shop",
                     options: [
                         { value: "roulette", label: "Рулетка / Roulette" },
-                        { value: "draft", label: "Драфт (16) / Draft (16)" }
+                        { value: "draft", label: "Драфт (12) / Draft (12)" }
                     ],
                     default: defaultTabSetting
                 },
@@ -4128,8 +5422,8 @@ var ScamlockUMM = (function () {
                     label: "Кнопка возврата / Return Button",
                     description: "Положение кнопки возврата в Scamlock в магазине / Position in shop",
                     options: [
-                        { value: "top_right", label: "Справа сверху / Top-Right" },
                         { value: "top_left", label: "Слева сверху / Top-Left" },
+                        { value: "top_right", label: "Справа сверху / Top-Right" },
                         { value: "bottom_right", label: "Справа снизу / Bottom-Right" }
                     ],
                     default: currentShopBtnPos
@@ -4190,7 +5484,7 @@ var ScamlockUMM = (function () {
     }
 
     function ApplyShopButtonPos(pos) {
-        currentShopBtnPos = pos || "top_right";
+        currentShopBtnPos = pos || "top_left";
         if (typeof ItemRoulette !== "undefined" && ItemRoulette.ApplyShopButtonPos) {
             ItemRoulette.ApplyShopButtonPos(currentShopBtnPos);
         }

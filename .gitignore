@@ -44,3 +44,10 @@ __pycache__/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Agent configs, skills, logs and planning documents
+.agents/
+AGENTS.md
+PLAN_*.md
+PROJECT_LOG.md
+
